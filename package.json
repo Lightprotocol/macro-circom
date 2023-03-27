@@ -1,0 +1,10 @@
+{
+  "name": "rust-circom-dsl",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "ananas-block <flow23@protonmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "circomlib": "^2.0.5"
+  }
+}

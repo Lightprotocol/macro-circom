@@ -1,0 +1,165 @@
+pragma circom 2.0.0;
+include "../node_modules/circomlib/circuits/poseidon.circom";
+include "../node_modules/circomlib/circuits/gates.circom";
+include "../node_modules/circomlib/circuits/comparators.circom";
+include "../node_modules/circomlib/circuits/eddsaposeidon.circom";
+
+
+
+/*
+Utxo structure:
+{
+    amount,
+    pubkey,
+    blinding, // random number
+}
+commitment = hash(amountHash, pubKey, blinding, assetHash, instructionType)
+nullifier = hash(commitment, merklePath, sign(privKey, commitment, merklePath))
+*/
+
+
+// will create a new instance of the circuit
+#[instance]
+{
+    fileName: appTransaction,
+    config(7, 1),
+    nrAppUtoxs: 1,
+    // publicInputs: [inputA, inputB]
+}
+
+#[lightTransaction(verifierTwo)]
+template AppTransaction(nrMaxSigners, baseVariables) {
+
+    /**
+    * // inputs
+    * signal input  inAmount[nIns][nInAssets];
+    * signal input  inPublicKey[nIns];
+    * signal input  inBlinding[nIns];
+    * signal input  inInstructionType[nIns];
+    * signal  input inPoolType[nIns];
+    * signal  input inVerifierPubkey[nIns];
+    * signal  input inIndices[nIns][nInAssets][nAssets];
+    * // outputs
+    * signal  input outputCommitment[nOuts];
+    * signal  input outAmount[nOuts][nOutAssets];
+    * signal  input outPubkey[nOuts];
+    * signal  input outBlinding[nOuts];
+    * signal  input outInstructionType[nOuts];
+    * signal  input outIndices[nOuts][nOutAssets][nAssets];
+    * signal  input outPoolType[nOuts];
+    * signal  input outVerifierPubkey[nOuts];
+    * signal  input assetPubkeys[nAssets];
+    *
+    * list of other accessible variables    
+    */
+
+/**
+* -------------------------- Application starts here --------------------------
+*/  
+    // the instruction keyword marks an instruction
+    // this is used for the idl
+    // all inputs not used in the instruction will be
+    // set to 0
+    // requires an instruction identifier variable
+    // this variable is used to 
+    // instructionName is also the name of the variable I use to enforce stuff
+    // #[instruction(instructionName)]
+    // {
+
+    // }
+
+    // var nrMaxSigners = 7;
+    // var baseVariables = 1;
+    assert(baseVariables + nrMaxSigners * 2 < 18);
+    // signal input threshold;
+    // signal input signerPubkeysX[nrMaxSigners];
+    // signal input signerPubkeysY[nrMaxSigners];
+    // TODO: add for auto preparation in transaction class
+    signal input isMultiSigUtxo[nIns];
+    /**
+    #[publicInputs]
+    {
+        none in this case but in others
+    }
+    */
+    
+    // defines the data which is saved in the utxo
+    // this data is defined at utxo creation
+    // is checked that only utxos with instructionData = hash or 0
+    // exist in input utxos
+    // is outside instruction
+    // could add signal inputs automatically for these
+    // are private inputs
+    #[utxoData]
+    {
+        threshold,
+        signerPubkeysX[nrMaxSigners],
+        signerPubkeysY[nrMaxSigners]
+    }
+    
+    component checkInstructionType[nIns];
+    // search for input utxo with this instructionHash
+    // the position of this utxo is specified in isEscrowAccount
+    // This is necessary because all paths need inside the circuit are hardcoded.
+    // also checks that all other instructionHashes are 0
+    // otherwise one could spend a utxo belonging to a different multisig
+    for (var i=0; i < nIns; i++) {          
+        inInstructionType[i] === instructionHasher.out * isMultiSigUtxo[i];
+    }
+
+
+    component checkIndicesMultiSigUtxo = CheckIndices(nIns);
+    checkIndicesMultiSigUtxo.threshold <== 1;
+    for (var i = 0; i < nIns; i++) {
+        log(isMultiSigUtxo[i]);
+        checkIndicesMultiSigUtxo.indices[i] <== isMultiSigUtxo[i];
+    }
+
+    // instruction starts here
+    signal input enabled[nrMaxSigners];
+    signal input signatures[nrMaxSigners];
+    signal input R8x[nrMaxSigners];
+    signal input R8y[nrMaxSigners];
+
+    // check either one or zero plus
+    // number of signatures to check is greater than the threshold
+    component checkIndices = CheckIndices(nrMaxSigners);
+    checkIndices.threshold <== threshold;
+    for (var i = 0; i < nrMaxSigners; i++) {
+        checkIndices.indices[i] <== enabled[i];
+    }
+
+
+    // Check signatures
+    component sigVerifier[nrMaxSigners];
+    for(var i = 0; i < nrMaxSigners; i++) {
+        sigVerifier[i] = EdDSAPoseidonVerifier();
+        sigVerifier[i].enabled <== enabled[i];
+        sigVerifier[i].Ax <== signerPubkeysX[i];
+        sigVerifier[i].Ay <== signerPubkeysY[i];
+        sigVerifier[i].S <== signatures[i];
+        sigVerifier[i].R8x <== R8x[i];
+        sigVerifier[i].R8y <== R8y[i];
+        sigVerifier[i].M <== connectingHasher.out;
+    }
+}
+
+template CheckIndices(n) {
+    signal input indices[n];    
+    signal input threshold;
+    var varSumIndices = 0;
+    for (var j = 0; j < n; j++) {
+        varSumIndices += indices[j];
+        // all indices are 0 or 1
+        indices[j] * (1 - indices[j]) === 0;
+    }
+    // TODO: test that this works
+    component checkThreshold = GreaterEqThan(8);
+    log(5555555555555555);
+    log(varSumIndices);
+    log(threshold);
+    log(5555555555555555);
+    checkThreshold.in[0] <== varSumIndices;
+    checkThreshold.in[1] <== threshold;
+    checkThreshold.out === 1;
+}
