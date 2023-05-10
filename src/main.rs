@@ -1,11 +1,15 @@
 pub mod connecting_hash_circom;
-
+pub mod errors;
+use crate::errors::MacroCircomError;
+use anyhow::{anyhow, Error as AnyhowError};
 use core::panic;
-// create circom file
-// create function that wr
+use errors::MacroCircomError::*;
 use std::{
+    env,
     fs::{self, File},
-    io::{Read, Write},
+    io::{self, prelude::*},
+    process::{Command, Stdio},
+    thread::spawn,
 };
 
 #[derive(Debug, PartialEq)]
@@ -30,27 +34,63 @@ struct Instance {
 
 // Outputs:
 // - circom file with circuit
-// TODO: rust file with public inputs, sytem verifier, as anchor constants
+// TODO: rust file with public inputs, sytem publicAppVerifier, as anchor constants
 
-fn main() {
-    // TODO: take filename from argv
-    let mut file = File::open("./circuit/circuit.light").unwrap();
+fn extract_string_between_slash_and_dot_light(input: &str) -> Option<String> {
+    let mut parts = input.rsplitn(2, '/');
+    let part_after_slash = parts.next()?;
+    let dot_light_index = part_after_slash.find(".light")?;
+
+    Some(part_after_slash[..dot_light_index].to_string())
+}
+
+// throw error when no utxoData -> doesn't make sense
+// throw error if is declared twice
+// throw error when there is no #[instance]
+// throw error when there is no #[lightTransaction(verifierTwo)]
+// add test for no config inputs
+fn main() -> Result<(), AnyhowError> {
+    // Take the filename from argv
+    let args: Vec<String> = env::args().collect();
+    if args.len() < 2 {
+        eprintln!("Usage: {} <file_path>", args[0]);
+        std::process::exit(1);
+    }
+    let file_path = &args[1];
+
+    let file_name = extract_string_between_slash_and_dot_light(file_path).unwrap();
+
+    // Open the file
+    let mut file = File::open(file_path).expect("Unable to open the file");
+
+    // Read the file's content
     let mut contents = String::new();
-    file.read_to_string(&mut contents).unwrap();
+    file.read_to_string(&mut contents)
+        .expect("Unable to read the file");
 
-    let (mut instance, contents) = parse_instance(&contents).unwrap();
+    let (mut instance, contents) = parse_instance(&contents)?;
+
+    if instance.nr_app_utoxs.is_none() {
+        return Err(anyhow!(InvalidNumberAppUtxos));
+    }
 
     let (instruction_hash_code, contents) = parse_general(
         &contents,
         &String::from("#[utxoData]"),
         generate_instruction_hash_code,
-    )
-    .unwrap();
+        true,
+    )?;
 
     let (_verifier_name, contents) =
         parse_light_transaction(&contents, &instruction_hash_code, &mut instance).unwrap();
 
-    let mut output_file = fs::File::create("./circuit/circuit.circom").unwrap();
+    let mut output_file =
+        fs::File::create("./circuit/".to_owned() + &file_name + ".circom").unwrap();
+    // output_file.write_all(&rustfmt(contents)?)?;
+    // println!(
+    //     " contents {}",
+    //     String::from_utf8(rustfmt(contents.clone())?)?
+    // );
     write!(&mut output_file, "{}", contents).unwrap();
 
     let mut output_file = fs::File::create(
@@ -62,16 +102,22 @@ fn main() {
         .concat(),
     )
     .unwrap();
-    let instance_str = generate_circom_main_string(&instance);
-
+    let instance_str = generate_circom_main_string(&instance, &file_name);
+    println!(
+        "sucessfully created main {}.circom and {}.circom",
+        instance.file_name, file_name
+    );
     write!(&mut output_file, "{}", instance_str).unwrap();
+    // output_file.write_all(&rustfmt(instance_str)?)?;
+    Ok(())
 }
 
 fn parse_general(
     input: &String,
     starting_string: &String,
     parse_between_brackets_fn: fn(String) -> String,
-) -> Option<(String, String)> {
+    critical: bool,
+) -> Result<(String, String), MacroCircomError> {
     let mut found_bracket = false;
     let mut remaining_lines = Vec::new();
     let mut found_instance = false;
@@ -119,7 +165,10 @@ fn parse_general(
         }
     }
     let res = parse_between_brackets_fn(bracket_str.join("\n"));
-    Some((res, remaining_lines.join("\n")))
+    if !found_instance && critical {
+        return Err(ParseInstanceError(input.to_string()));
+    }
+    Ok((res, remaining_lines.join("\n")))
 }
 
 fn generate_instruction_hash_code(input: String) -> String {
@@ -194,7 +243,7 @@ fn parse_light_transaction(
     input: &String,
     instruction_hash_code: &String,
     instance: &mut Instance,
-) -> Option<(String, String)> {
+) -> Result<(String, String), MacroCircomError> {
     let mut found_bracket = false;
     let mut remaining_lines = Vec::new();
     let mut found_instance = false;
@@ -218,32 +267,40 @@ fn parse_light_transaction(
         if found_bracket {
             if line.starts_with("template") {
                 instance.template_name = extract_template_name(line);
-                let to_insert = ", levels, nIns, nOuts, feeAsset, indexFeeAsset, indexPublicAsset, nAssets, nInAssets, nOutAssets";
+                let to_insert = &format!("{} levels, nIns, nOuts, feeAsset, indexFeeAsset, indexPublicAsset, nAssets, nInAssets, nOutAssets", if instance.config.is_empty() { "" } else { "," });
                 remaining_lines.push(insert_string_before_parenthesis(line, to_insert));
                 remaining_lines
-                    .push(connecting_hash_circom::connecting_hash_verifier_two.to_string());
+                    .push(connecting_hash_circom::CONNECTING_HASH_VERIFIER_TWO.to_string());
                 remaining_lines.push(instruction_hash_code.to_string());
                 found_bracket = false;
             }
         }
     }
 
-    Some((verifier_name, remaining_lines.join("\n")))
+    if !found_instance {
+        return Err(LightTransactionUndefined);
+    }
+
+    Ok((verifier_name, remaining_lines.join("\n")))
 }
+
 fn extract_template_name(input: &str) -> Option<String> {
     let start = input.find("template ")? + "template ".len();
     let end = input.find('(')?;
 
     Some(input[start..end].trim().to_string())
 }
-fn parse_instance(input: &String) -> Option<(Instance, String)> {
+fn parse_instance(input: &String) -> Result<(Instance, String), MacroCircomError> {
     let mut file_name = String::new();
     let mut config: Vec<u32> = Vec::new();
     let mut nr_app_utoxs: Option<u32> = None;
     let mut found_bracket = false;
     let mut remaining_lines = Vec::new();
     let mut found_instance = false;
-    let mut public_inputs = vec![String::from("connectingHash"), String::from("verifier")];
+    let mut public_inputs = vec![
+        String::from("transactionHash"),
+        String::from("publicAppVerifier"),
+    ];
     let mut commented = false;
     for line in input.lines() {
         let line = line.trim();
@@ -264,7 +321,7 @@ fn parse_instance(input: &String) -> Option<(Instance, String)> {
         }
         if line.starts_with("#[instance]") {
             if found_instance == true {
-                panic!();
+                return Err(TooManyInstances);
             };
             found_instance = true;
             found_bracket = true;
@@ -298,7 +355,7 @@ fn parse_instance(input: &String) -> Option<(Instance, String)> {
                 .unwrap()
                 .captures(line)
             {
-                nr_app_utoxs = Some(captures.get(1).unwrap().as_str().parse().ok()?);
+                nr_app_utoxs = Some(captures.get(1).unwrap().as_str().parse().ok().unwrap());
             } else if line.starts_with("publicInputs") {
                 let public_inputs_tmp = parse_public_input(line);
 
@@ -314,8 +371,10 @@ fn parse_instance(input: &String) -> Option<(Instance, String)> {
             found_bracket = false;
         }
     }
-
-    Some((
+    if !found_instance {
+        return Err(NoInstanceDefined);
+    }
+    Ok((
         Instance {
             file_name,
             config,
@@ -332,7 +391,7 @@ fn parse_public_input(input: &str) -> Vec<String> {
     inner.split(",").map(|s| s.trim().to_string()).collect()
 }
 
-fn generate_circom_main_string(instance: &Instance) -> String {
+fn generate_circom_main_string(instance: &Instance, file_name: &str) -> String {
     let name = instance.template_name.as_ref().unwrap();
     let config = &instance.config;
     let nr_app_utoxs = instance.nr_app_utoxs.unwrap_or(0);
@@ -344,13 +403,44 @@ fn generate_circom_main_string(instance: &Instance) -> String {
         .map(|c| c.to_string())
         .collect::<Vec<String>>()
         .join(", ");
-
     format!(
         "pragma circom 2.0.0;\n\
-         include \"./circuit.circom\";\n\
-         component main {{public [{}]}} =  {}({} ,18, 4, 4, 24603683191960664281975569809895794547840992286820815015841170051925534051, 0, {}, 3, 2, 2);",
-        inputs_str, name, config_str, nr_app_utoxs
+         include \"./{}.circom\";\n\
+         component main {{public [{}]}} =  {}({}{} 18, 4, 4, 24603683191960664281975569809895794547840992286820815015841170051925534051, 0, {}, 3, 2, 2);",
+         file_name, inputs_str, name, config_str, if config_str.is_empty() { "" } else { "," }, nr_app_utoxs
     )
+}
+
+#[allow(dead_code)]
+fn rustfmt(code: String) -> Result<Vec<u8>, anyhow::Error> {
+    let mut cmd = match env::var_os("RUSTFMT") {
+        Some(r) => Command::new(r),
+        None => Command::new("rustfmt"),
+    };
+
+    let mut cmd = cmd
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()?;
+
+    let mut stdin = cmd.stdin.take().unwrap();
+    let mut stdout = cmd.stdout.take().unwrap();
+
+    let stdin_handle = spawn(move || {
+        stdin.write_all(code.as_bytes()).unwrap();
+        // Manually flush and close the stdin handle
+        stdin.flush().unwrap();
+        drop(stdin);
+    });
+
+    let mut formatted_code = vec![];
+    io::copy(&mut stdout, &mut formatted_code)?;
+
+    let _ = cmd.wait();
+    stdin_handle.join().unwrap();
+
+    Ok(formatted_code)
 }
 
 #[cfg(test)]
@@ -378,7 +468,10 @@ mod tests {
             template_name: None,
             config: vec![7, 1, 9, 2],
             nr_app_utoxs: Some(1),
-            public_inputs: vec![String::from("connectingHash"), String::from("verifier")],
+            public_inputs: vec![
+                String::from("transactionHash"),
+                String::from("publicAppVerifier"),
+            ],
         };
 
         let result = parse_instance(&input).unwrap();
@@ -410,8 +503,8 @@ mod tests {
             public_inputs: vec![
                 String::from("inputA"),
                 String::from("inputB"),
-                String::from("connectingHash"),
-                String::from("verifier"),
+                String::from("transactionHash"),
+                String::from("publicAppVerifier"),
             ],
         };
 
@@ -427,14 +520,20 @@ mod tests {
             template_name: Some(String::from("AppTransaction")),
             config: vec![7, 1],
             nr_app_utoxs: Some(1),
-            public_inputs: vec![String::from("connectingHash"), String::from("verifier")],
+            public_inputs: vec![
+                String::from("transactionHash"),
+                String::from("publicAppVerifier"),
+            ],
         };
 
         let expected_string = "pragma circom 2.0.0;\n\
             include \"./circuit.circom\";\n\
-            component main {public [connectingHash, verifier]} =  AppTransaction(7, 1 ,18, 4, 4, 24603683191960664281975569809895794547840992286820815015841170051925534051, 0, 1, 3, 2, 2);";
+            component main {public [transactionHash, publicAppVerifier]} =  AppTransaction(7, 1, 18, 4, 4, 24603683191960664281975569809895794547840992286820815015841170051925534051, 0, 1, 3, 2, 2);";
 
-        assert_eq!(generate_circom_main_string(&instance), expected_string);
+        assert_eq!(
+            generate_circom_main_string(&instance, "circuit"),
+            expected_string
+        );
     }
 
     #[test]
@@ -444,14 +543,20 @@ mod tests {
             template_name: Some(String::from("AppTransaction")),
             config: vec![7, 1, 3, 2],
             nr_app_utoxs: Some(1),
-            public_inputs: vec![String::from("connectingHash"), String::from("verifier")],
+            public_inputs: vec![
+                String::from("transactionHash"),
+                String::from("publicAppVerifier"),
+            ],
         };
 
         let expected_string = "pragma circom 2.0.0;\n\
             include \"./circuit.circom\";\n\
-            component main {public [connectingHash, verifier]} =  AppTransaction(7, 1, 3, 2 ,18, 4, 4, 24603683191960664281975569809895794547840992286820815015841170051925534051, 0, 1, 3, 2, 2);";
+            component main {public [transactionHash, publicAppVerifier]} =  AppTransaction(7, 1, 3, 2, 18, 4, 4, 24603683191960664281975569809895794547840992286820815015841170051925534051, 0, 1, 3, 2, 2);";
 
-        assert_eq!(generate_circom_main_string(&instance), expected_string);
+        assert_eq!(
+            generate_circom_main_string(&instance, "circuit"),
+            expected_string
+        );
     }
 
     #[test]
@@ -462,15 +567,18 @@ mod tests {
             template_name: Some(String::from("AppTransaction")),
             config: vec![7, 1],
             nr_app_utoxs: Some(1),
-            public_inputs: vec![String::from("connectingHash"), String::from("verifier")],
+            public_inputs: vec![
+                String::from("transactionHash"),
+                String::from("publicAppVerifier"),
+            ],
         };
 
         let incorrect_expected_string = "pragma circom 2.0.0;\n\
             include \"./circuit.circom\";\n\
-            component main {public [connectingHash, verifier]} =  AppTransaction(7, 2 ,18, 4, 4, 24603683191960664281975569809895794547840992286820815015841170051925534051, 0, 1, 3, 2, 2);";
+            component main {public [transactionHash, publicAppVerifier]} =  AppTransaction(7, 2 ,18, 4, 4, 24603683191960664281975569809895794547840992286820815015841170051925534051, 0, 1, 3, 2, 2);";
 
         assert_eq!(
-            generate_circom_main_string(&instance),
+            generate_circom_main_string(&instance, "circuit"),
             incorrect_expected_string
         );
     }
@@ -504,4 +612,87 @@ mod tests {
         let expected: Option<String> = None;
         assert_eq!(expected, extract_template_name(input));
     }
+
+    #[test]
+    fn test_parse_instance_no_instance_defined() {
+        let input = String::from("no #[instance] keyword");
+        let result = parse_instance(&input);
+        assert_eq!(result, Err(NoInstanceDefined));
+    }
+
+    #[test]
+    fn test_parse_instance_too_many_instances() {
+        let input = String::from("#[instance] {} \n#[instance] {}");
+        let result = parse_instance(&input);
+        assert_eq!(result, Err(TooManyInstances));
+    }
+
+    #[test]
+    fn test_parse_light_transaction_light_transaction_undefined() {
+        let input = String::from("no #[lightTransaction] keyword");
+        let instruction_hash_code = String::from("instruction hash code");
+        let mut instance = Instance {
+            file_name: String::from("file_name"),
+            template_name: None,
+            config: vec![],
+            nr_app_utoxs: None,
+            public_inputs: vec![],
+        };
+
+        let result = parse_light_transaction(&input, &instruction_hash_code, &mut instance);
+        assert_eq!(result, Err(LightTransactionUndefined));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_parse_light_transaction_double_declaration() {
+        let input = String::from(
+            "#[lightTransaction(verifierOne)] { ... } \n #[lightTransaction(verifierTwo)] { ... }",
+        );
+        let instruction_hash_code = String::from("instruction hash code");
+        let mut instance = Instance {
+            file_name: String::from("file_name"),
+            template_name: None,
+            config: vec![],
+            nr_app_utoxs: None,
+            public_inputs: vec![],
+        };
+
+        let _ = parse_light_transaction(&input, &instruction_hash_code, &mut instance);
+    }
+
+    // doesn't work because the error is on the highest level
+    // #[test]
+    // fn test_main_invalid_number_app_utxos() {
+    //     let input = "#[instance]
+    //     {
+    //         fileName: MockVerifierTransaction,
+    //         config(),
+    //         nrAppUtoxs: 1,
+    //         publicInputs: [currentSlot]
+    //     }
+
+    //     #[lightTransaction(verifierTwo)]
+    //     template mockVerifierTransaction() {
+    //         /**
+    //         * -------------------------- Application starts here --------------------------
+    //         */
+    //         // defines the data which is saved in the utxo
+    //         // this data is defined at utxo creation
+    //         // is checked that only utxos with instructionData = hash or 0
+    //         // exist in input utxos
+    //         // is outside instruction
+    //         // could add signal inputs automatically for these
+    //         // are private inputs
+    //         #[utxoData]
+    //         {
+    //             releaseSlot
+    //         }
+    //         signal input currentSlot;
+    //         currentSlot === releaseSlot;
+    //     }"
+
+    //     let result = main();
+    //     assert_eq!(result, Err(anyhow!(InvalidNumberAppUtxos)));
+    // }
 }

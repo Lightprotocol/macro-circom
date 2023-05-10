@@ -1,13 +1,14 @@
-pub const connecting_hash_verifier_two: &str = "
+pub const CONNECTING_HASH_VERIFIER_TWO: &str = "
 
     assert( nIns * nAssets < 49);
     assert( nInAssets <= nAssets);
     assert( nOutAssets <= nAssets);
 
+    signal input txIntegrityHash;
     signal input  inAmount[nIns][nInAssets];
     signal input  inPublicKey[nIns];
     signal input  inBlinding[nIns];
-    signal input  inInstructionType[nIns];
+    signal input  inAppDataHash[nIns];
     signal  input inPoolType[nIns];
     signal  input inVerifierPubkey[nIns];
     signal  input inIndices[nIns][nInAssets][nAssets];
@@ -17,12 +18,13 @@ pub const connecting_hash_verifier_two: &str = "
     signal  input outAmount[nOuts][nOutAssets];
     signal  input outPubkey[nOuts];
     signal  input outBlinding[nOuts];
-    signal  input outInstructionType[nOuts];
+    signal  input outAppDataHash[nOuts];
     signal  input outIndices[nOuts][nOutAssets][nAssets];
     signal  input outPoolType[nOuts];
     signal  input outVerifierPubkey[nOuts];
 
     signal  input assetPubkeys[nAssets];
+    signal input transactionVersion;
 
     component inGetAsset[nIns][nInAssets][nAssets];
 
@@ -41,7 +43,7 @@ pub const connecting_hash_verifier_two: &str = "
 
     var sumIns[nAssets];
     for (var i = 0; i < nAssets; i++) {
-      sumIns[i] = 0;
+    sumIns[i] = 0;
     }
 
     var assetsIns[nIns][nInAssets];
@@ -80,14 +82,15 @@ pub const connecting_hash_verifier_two: &str = "
             sumInAmount += inAmount[tx][a];
         }
 
-        inCommitmentHasher[tx] = Poseidon(7);
-        inCommitmentHasher[tx].inputs[0] <== inAmountsHasher[tx].out;
-        inCommitmentHasher[tx].inputs[1] <== inPublicKey[tx];
-        inCommitmentHasher[tx].inputs[2] <== inBlinding[tx];
-        inCommitmentHasher[tx].inputs[3] <== inAssetsHasher[tx].out;
-        inCommitmentHasher[tx].inputs[4] <== inInstructionType[tx];
-        inCommitmentHasher[tx].inputs[5] <== inPoolType[tx];
-        inCommitmentHasher[tx].inputs[6] <== inVerifierPubkey[tx];
+        inCommitmentHasher[tx] = Poseidon(8);
+        inCommitmentHasher[tx].inputs[0] <== transactionVersion; // transaction version
+        inCommitmentHasher[tx].inputs[1] <== inAmountsHasher[tx].out;
+        inCommitmentHasher[tx].inputs[2] <== inPublicKey[tx];
+        inCommitmentHasher[tx].inputs[3] <== inBlinding[tx];
+        inCommitmentHasher[tx].inputs[4] <== inAssetsHasher[tx].out;
+        inCommitmentHasher[tx].inputs[5] <== inAppDataHash[tx];
+        inCommitmentHasher[tx].inputs[6] <== inPoolType[tx];
+        inCommitmentHasher[tx].inputs[7] <== inVerifierPubkey[tx];
 
 
 
@@ -106,12 +109,12 @@ pub const connecting_hash_verifier_two: &str = "
     component outCommitmentHasher[nOuts];
     component outAmountCheck[nOuts][nOutAssets];
     component sumOut[nOuts][nOutAssets][nAssets];
-    component outAmountHasher[nOuts];
-    component outAssetHasher[nOuts];
+    component outAmountsHasher[nOuts];
+    component outAssetsHasher[nOuts];
 
     var sumOuts[nAssets];
     for (var i = 0; i < nAssets; i++) {
-      sumOuts[i] = 0;
+    sumOuts[i] = 0;
     }
 
     var assetsOuts[nOuts][nOutAssets];
@@ -127,7 +130,7 @@ pub const connecting_hash_verifier_two: &str = "
         // for every asset for every tx only one index is 1 others are 0
         // select the asset corresponding to the index
         // and add it to the assetHasher
-        outAssetHasher[tx] = Poseidon(nOutAssets);
+        outAssetsHasher[tx] = Poseidon(nOutAssets);
 
         for (var a = 0; a < nOutAssets; a++) {
             var asset = 0;
@@ -138,7 +141,7 @@ pub const connecting_hash_verifier_two: &str = "
                 asset += outGetAsset[tx][a][i].out;
             }
             assetsOuts[tx][a] = asset;
-            outAssetHasher[tx].inputs[a] <== asset;
+            outAssetsHasher[tx].inputs[a] <== asset;
         }
 
         for (var i = 0; i < nOutAssets; i++) {
@@ -147,19 +150,20 @@ pub const connecting_hash_verifier_two: &str = "
             outAmountCheck[tx][i].in <== outAmount[tx][i];
         }
 
-        outAmountHasher[tx] = Poseidon(nOutAssets);
+        outAmountsHasher[tx] = Poseidon(nOutAssets);
         for (var i = 0; i < nOutAssets; i++) {
-            outAmountHasher[tx].inputs[i] <== outAmount[tx][i];
+            outAmountsHasher[tx].inputs[i] <== outAmount[tx][i];
         }
 
-        outCommitmentHasher[tx] = Poseidon(7);
-        outCommitmentHasher[tx].inputs[0] <== outAmountHasher[tx].out;
-        outCommitmentHasher[tx].inputs[1] <== outPubkey[tx];
-        outCommitmentHasher[tx].inputs[2] <== outBlinding[tx];
-        outCommitmentHasher[tx].inputs[3] <== outAssetHasher[tx].out;
-        outCommitmentHasher[tx].inputs[4] <== outInstructionType[tx];
-        outCommitmentHasher[tx].inputs[5] <== outPoolType[tx];
-        outCommitmentHasher[tx].inputs[6] <== outVerifierPubkey[tx];
+        outCommitmentHasher[tx] = Poseidon(8);
+        outCommitmentHasher[tx].inputs[0] <== transactionVersion; // transaction version
+        outCommitmentHasher[tx].inputs[1] <== outAmountsHasher[tx].out;
+        outCommitmentHasher[tx].inputs[2] <== outPubkey[tx];
+        outCommitmentHasher[tx].inputs[3] <== outBlinding[tx];
+        outCommitmentHasher[tx].inputs[4] <== outAssetsHasher[tx].out;
+        outCommitmentHasher[tx].inputs[5] <== outAppDataHash[tx];
+        outCommitmentHasher[tx].inputs[6] <== outPoolType[tx];
+        outCommitmentHasher[tx].inputs[7] <== outVerifierPubkey[tx];
         outCommitmentHasher[tx].out === outputCommitment[tx];
 
         // ensure that all pool types are the same
@@ -167,8 +171,8 @@ pub const connecting_hash_verifier_two: &str = "
     }
 
     // public inputs
-    signal input verifier;
-    signal  input connectingHash;
+    signal input publicAppVerifier;
+    signal  input transactionHash;
 
     // generating input hash
     // hash commitment 
@@ -182,10 +186,12 @@ pub const connecting_hash_verifier_two: &str = "
         outputHasher.inputs[i] <== outCommitmentHasher[i].out;
     }
 
-    component connectingHasher = Poseidon(2);
+    component transactionHasher = Poseidon(3);
 
-    connectingHasher.inputs[0] <== inputHasher.out;
-    connectingHasher.inputs[1] <== outputHasher.out;
+    transactionHasher.inputs[0] <== inputHasher.out;
+    transactionHasher.inputs[1] <== outputHasher.out;
+    transactionHasher.inputs[2] <== txIntegrityHash;
 
-    connectingHash === connectingHasher.out;
+
+    transactionHash === transactionHasher.out;
 ";
