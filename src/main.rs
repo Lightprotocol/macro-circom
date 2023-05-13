@@ -1,6 +1,8 @@
 pub mod connecting_hash_circom;
 pub mod errors;
+pub mod light_utils_string;
 use crate::errors::MacroCircomError;
+use crate::light_utils_string::{PART_ONE, PART_TWO};
 use anyhow::{anyhow, Error as AnyhowError};
 use core::panic;
 use errors::MacroCircomError::*;
@@ -11,7 +13,6 @@ use std::{
     process::{Command, Stdio},
     thread::spawn,
 };
-
 #[derive(Debug, PartialEq)]
 struct Instance {
     file_name: String,
@@ -52,11 +53,12 @@ fn extract_string_between_slash_and_dot_light(input: &str) -> Option<String> {
 fn main() -> Result<(), AnyhowError> {
     // Take the filename from argv
     let args: Vec<String> = env::args().collect();
-    if args.len() < 2 {
+    if args.len() < 3 {
         eprintln!("Usage: {} <file_path>", args[0]);
         std::process::exit(1);
     }
     let file_path = &args[1];
+    let program_name = &args[2];
 
     let file_name = extract_string_between_slash_and_dot_light(file_path).unwrap();
 
@@ -74,7 +76,7 @@ fn main() -> Result<(), AnyhowError> {
         return Err(anyhow!(InvalidNumberAppUtxos));
     }
 
-    let (instruction_hash_code, contents) = parse_general(
+    let (instruction_hash_code, contents, utxo_data_variable_names) = parse_general(
         &contents,
         &String::from("#[utxoData]"),
         generate_instruction_hash_code,
@@ -109,15 +111,51 @@ fn main() -> Result<(), AnyhowError> {
     );
     write!(&mut output_file, "{}", instance_str).unwrap();
     // output_file.write_all(&rustfmt(instance_str)?)?;
+    let utxo_rust_idl_string = create_rust_idl(UTXO_STRUCT_BASE, &utxo_data_variable_names, "u256");
+    let public_inputs_rust_idl_string = create_rust_idl(
+        PUBLIC_INPUTS_INSTRUCTION_DATA_BASE,
+        &instance.public_inputs[..instance.public_inputs.len() - 2].to_vec(),
+        "[u8; 32]",
+    );
+    let utxo_app_data_rust_idl_string =
+        create_rust_idl(UTXO_APP_DATA_STRUCT_BASE, &utxo_data_variable_names, "u256");
+
+    let light_utils_str = create_light_utils_str(
+        utxo_rust_idl_string,
+        public_inputs_rust_idl_string,
+        utxo_app_data_rust_idl_string,
+    );
+    // let program_name: &str = "verifier";
+    let mut output_file_idl =
+        fs::File::create("./programs/".to_owned() + &program_name + "/src/light_utils.rs").unwrap();
+    write!(&mut output_file_idl, "{}", light_utils_str).unwrap();
     Ok(())
+}
+
+pub const UTXO_APP_DATA_STRUCT_BASE: &str = "#[allow(non_snake_case)]
+#[account]
+pub struct UtxoAppData {";
+
+fn create_light_utils_str(
+    utxo_rust_idl_string: String,
+    public_inputs_rust_idl_string: String,
+    utxo_app_data_rust_idl_string: String,
+) -> String {
+    let mut result = String::from(PART_ONE);
+    result = format!("{}\n{}\n", result, public_inputs_rust_idl_string);
+    result = format!("{}\n{}\n", result, PART_TWO);
+    result = format!("{}\n{}\n", result, utxo_rust_idl_string);
+    result = format!("{}\n{}\n", result, utxo_app_data_rust_idl_string);
+    // result = format!("{}\n{}\n", result, ";");
+    result
 }
 
 fn parse_general(
     input: &String,
     starting_string: &String,
-    parse_between_brackets_fn: fn(String) -> String,
+    parse_between_brackets_fn: fn(String) -> (String, Vec<String>),
     critical: bool,
-) -> Result<(String, String), MacroCircomError> {
+) -> Result<(String, String, Vec<String>), MacroCircomError> {
     let mut found_bracket = false;
     let mut remaining_lines = Vec::new();
     let mut found_instance = false;
@@ -164,25 +202,26 @@ fn parse_general(
             remaining_lines.push(line);
         }
     }
-    let res = parse_between_brackets_fn(bracket_str.join("\n"));
+    let (res, variable_vec) = parse_between_brackets_fn(bracket_str.join("\n"));
     if !found_instance && critical {
         return Err(ParseInstanceError(input.to_string()));
     }
-    Ok((res, remaining_lines.join("\n")))
+    Ok((res, remaining_lines.join("\n"), variable_vec))
 }
 
-fn generate_instruction_hash_code(input: String) -> String {
+fn generate_instruction_hash_code(input: String) -> (String, Vec<String>) {
     let variables: Vec<&str> = input.split(',').map(|s| s.trim()).collect();
     let mut non_array_variables = 0;
     let mut array_variables = Vec::<String>::new();
     let mut output = String::new();
-
+    let mut output_variable_names = Vec::<String>::new();
     for var in &variables {
         if var.contains('[') && var.contains(']') {
             array_variables.push(get_string_between_brackets(var).unwrap().to_string());
         } else {
             non_array_variables += 1;
         }
+        output_variable_names.push(String::from(*var));
         output.push_str(&format!("signal input {};\n", var));
     }
     if non_array_variables != 0 {
@@ -211,8 +250,7 @@ fn generate_instruction_hash_code(input: String) -> String {
             output.push_str(&format!("instructionHasher.inputs[{}] <== {};\n", i, var));
         }
     }
-
-    output
+    (output, output_variable_names)
 }
 
 fn get_string_between_brackets(input: &str) -> Option<&str> {
@@ -411,6 +449,34 @@ fn generate_circom_main_string(instance: &Instance, file_name: &str) -> String {
     )
 }
 
+const UTXO_STRUCT_BASE: &str = "\
+#[allow(non_snake_case)]
+#[account]
+pub struct Utxo {
+    amounts: [u64; 2],
+    spl_asset_index: u64,
+    verifier_address_index: u64,
+    blinding: u256,
+    app_data_hash: u256,
+    account_shielded_public_key: u256,
+    account_encryption_public_key: [u8; 32],";
+
+const PUBLIC_INPUTS_INSTRUCTION_DATA_BASE: &str = "#[allow(non_snake_case)]
+#[derive(Debug)]
+#[account]
+pub struct InstructionDataLightInstructionSecond {";
+
+pub fn create_rust_idl(base: &str, public_inputs: &Vec<String>, input_type: &str) -> String {
+    let mut result = String::from(base);
+
+    for input in public_inputs {
+        result = format!("{}\n    {}: {},", result, input, input_type);
+    }
+
+    result.push_str("\n}");
+    result
+}
+
 #[allow(dead_code)]
 fn rustfmt(code: String) -> Result<Vec<u8>, anyhow::Error> {
     let mut cmd = match env::var_os("RUSTFMT") {
@@ -478,6 +544,7 @@ mod tests {
         assert_eq!(result.0, expected);
         assert_ne!(initial_input, result.1);
     }
+
     #[test]
     fn test_parse_instance_with_public_input() {
         let input = String::from(
@@ -695,4 +762,42 @@ mod tests {
     //     let result = main();
     //     assert_eq!(result, Err(anyhow!(InvalidNumberAppUtxos)));
     // }
+    #[test]
+    fn test_create_utxo_rust_idl_success() {
+        let public_inputs = vec![String::from("release_slot"), String::from("other_slot")];
+        let result = create_rust_idl(UTXO_STRUCT_BASE, &public_inputs);
+
+        let expected_output = String::from(
+            "#[allow(non_snake_case)]
+#[account]
+pub struct Utxo {
+    amounts: [u64; 2],
+    spl_asset_index: u64,
+    verifier_address_index: u64,
+    blinding: u256,
+    app_data_hash: u256,
+    account_shielded_public_key: u256,
+    account_encryption_public_key: [u8; 32],
+    release_slot: [u8; 32],
+    other_slot: [u8; 32],
+}",
+        );
+
+        assert_eq!(result, expected_output);
+    }
+    #[test]
+    fn test_create_rust_idl() {
+        let public_inputs = vec![String::from("current_slot"), String::from("other_slot")];
+        let output = create_rust_idl(PUBLIC_INPUTS_INSTRUCTION_DATA_BASE, &public_inputs);
+
+        let expected_output = "#[allow(non_snake_case)]
+#[derive(Debug)]
+#[account]
+pub struct InstructionDataLightInstructionSecond {
+    current_slot: [u8; 32],
+    other_slot: [u8; 32],
+}";
+
+        assert_eq!(output, expected_output);
+    }
 }
