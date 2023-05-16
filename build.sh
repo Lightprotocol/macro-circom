@@ -7,7 +7,7 @@ cargo build --release
 pkg_name=$(grep 'name =' Cargo.toml | sed 's/name = "\(.*\)"/\1/' | xargs)
 
 # The path where you want to save the binary
-destination_dir="../light-sdk-ts/bin"
+destination_dir="../cli/bin"
 
 # Create the directory if it doesn't exist
 mkdir -p $destination_dir
