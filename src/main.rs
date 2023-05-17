@@ -464,7 +464,7 @@ pub struct Utxo {
 const PUBLIC_INPUTS_INSTRUCTION_DATA_BASE: &str = "#[allow(non_snake_case)]
 #[derive(Debug)]
 #[account]
-pub struct InstructionDataLightInstructionSecond {";
+pub struct InstructionDataPspInstructionSecond {";
 
 pub fn create_rust_idl(base: &str, public_inputs: &Vec<String>, input_type: &str) -> String {
     let mut result = String::from(base);
@@ -765,7 +765,7 @@ mod tests {
     #[test]
     fn test_create_utxo_rust_idl_success() {
         let public_inputs = vec![String::from("release_slot"), String::from("other_slot")];
-        let result = create_rust_idl(UTXO_STRUCT_BASE, &public_inputs);
+        let result = create_rust_idl(UTXO_STRUCT_BASE, &public_inputs, "u256");
 
         let expected_output = String::from(
             "#[allow(non_snake_case)]
@@ -788,12 +788,12 @@ pub struct Utxo {
     #[test]
     fn test_create_rust_idl() {
         let public_inputs = vec![String::from("current_slot"), String::from("other_slot")];
-        let output = create_rust_idl(PUBLIC_INPUTS_INSTRUCTION_DATA_BASE, &public_inputs);
+        let output = create_rust_idl(PUBLIC_INPUTS_INSTRUCTION_DATA_BASE, &public_inputs, "u256");
 
         let expected_output = "#[allow(non_snake_case)]
 #[derive(Debug)]
 #[account]
-pub struct InstructionDataLightInstructionSecond {
+pub struct InstructionDataPspInstructionSecond {
     current_slot: [u8; 32],
     other_slot: [u8; 32],
 }";
