@@ -6,6 +6,7 @@ use crate::light_utils_string::{PART_ONE, PART_TWO};
 use anyhow::{anyhow, Error as AnyhowError};
 use core::panic;
 use errors::MacroCircomError::*;
+use heck::AsLowerCamelCase;
 use std::{
     env,
     fs::{self, File},
@@ -61,7 +62,6 @@ fn main() -> Result<(), AnyhowError> {
     let program_name = &args[2];
 
     let file_name = extract_string_between_slash_and_dot_light(file_path).unwrap();
-
     // Open the file
     let mut file = File::open(file_path).expect("Unable to open the file");
 
@@ -71,7 +71,6 @@ fn main() -> Result<(), AnyhowError> {
         .expect("Unable to read the file");
 
     let (mut instance, contents) = parse_instance(&contents)?;
-
     if instance.nr_app_utoxs.is_none() {
         return Err(anyhow!(InvalidNumberAppUtxos));
     }
@@ -88,11 +87,7 @@ fn main() -> Result<(), AnyhowError> {
 
     let mut output_file =
         fs::File::create("./circuit/".to_owned() + &file_name + ".circom").unwrap();
-    // output_file.write_all(&rustfmt(contents)?)?;
-    // println!(
-    //     " contents {}",
-    //     String::from_utf8(rustfmt(contents.clone())?)?
-    // );
+
     write!(&mut output_file, "{}", contents).unwrap();
 
     let mut output_file = fs::File::create(
@@ -125,7 +120,6 @@ fn main() -> Result<(), AnyhowError> {
         public_inputs_rust_idl_string,
         utxo_app_data_rust_idl_string,
     );
-    // let program_name: &str = "verifier";
     let mut output_file_idl =
         fs::File::create("./programs/".to_owned() + &program_name + "/src/light_utils.rs").unwrap();
     write!(&mut output_file_idl, "{}", light_utils_str).unwrap();
@@ -378,6 +372,7 @@ fn parse_instance(input: &String) -> Result<(Instance, String), MacroCircomError
                     .trim_end_matches(',')
                     .trim()
                     .to_owned();
+                file_name = format!("{}{}", AsLowerCamelCase(file_name), &"Main");
             } else if line.starts_with("config") {
                 let numbers: Vec<u32> = line
                     .split("(")
