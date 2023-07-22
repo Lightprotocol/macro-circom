@@ -119,6 +119,7 @@ fn main() -> Result<(), AnyhowError> {
         utxo_rust_idl_string,
         public_inputs_rust_idl_string,
         utxo_app_data_rust_idl_string,
+        instance,
     );
     let mut output_file_idl =
         fs::File::create("./programs/".to_owned() + &program_name + "/src/light_utils.rs").unwrap();
@@ -134,8 +135,14 @@ fn create_light_utils_str(
     utxo_rust_idl_string: String,
     public_inputs_rust_idl_string: String,
     utxo_app_data_rust_idl_string: String,
+    instance: Instance,
 ) -> String {
     let mut result = String::from(PART_ONE);
+    let nr_public_inputs = format!(
+        "pub const NR_CHECKED_INPUTS: usize = {};",
+        instance.public_inputs.len()
+    );
+    result = format!("{}\n{}\n", result, nr_public_inputs);
     result = format!("{}\n{}\n", result, public_inputs_rust_idl_string);
     result = format!("{}\n{}\n", result, PART_TWO);
     result = format!("{}\n{}\n", result, utxo_rust_idl_string);
@@ -459,7 +466,7 @@ pub struct Utxo {
 const PUBLIC_INPUTS_INSTRUCTION_DATA_BASE: &str = "#[allow(non_snake_case)]
 #[derive(Debug)]
 #[account]
-pub struct InstructionDataPspInstructionSecond {";
+pub struct InstructionDataLightInstructionSecond {";
 
 pub fn create_rust_idl(base: &str, public_inputs: &Vec<String>, input_type: &str) -> String {
     let mut result = String::from(base);
@@ -525,7 +532,7 @@ mod tests {
         );
         let initial_input = input.clone();
         let expected = Instance {
-            file_name: "appTransaction".to_owned(),
+            file_name: "appTransactionMain".to_owned(),
             template_name: None,
             config: vec![7, 1, 9, 2],
             nr_app_utoxs: Some(1),
@@ -558,7 +565,7 @@ mod tests {
         );
         let initial_input = input.clone();
         let expected = Instance {
-            file_name: "appTransaction".to_owned(),
+            file_name: "appTransactionMain".to_owned(),
             config: vec![7, 1, 9, 2],
             template_name: None,
             nr_app_utoxs: Some(1),
@@ -773,8 +780,8 @@ pub struct Utxo {
     app_data_hash: u256,
     account_shielded_public_key: u256,
     account_encryption_public_key: [u8; 32],
-    release_slot: [u8; 32],
-    other_slot: [u8; 32],
+    release_slot: u256,
+    other_slot: u256,
 }",
         );
 
@@ -788,9 +795,9 @@ pub struct Utxo {
         let expected_output = "#[allow(non_snake_case)]
 #[derive(Debug)]
 #[account]
-pub struct InstructionDataPspInstructionSecond {
-    current_slot: [u8; 32],
-    other_slot: [u8; 32],
+pub struct InstructionDataLightInstructionSecond {
+    current_slot: u256,
+    other_slot: u256,
 }";
 
         assert_eq!(output, expected_output);
