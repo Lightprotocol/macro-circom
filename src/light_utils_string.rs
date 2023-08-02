@@ -2,7 +2,7 @@ pub const PART_ONE: &str = "use crate::processor::TransactionsConfig;
 use anchor_lang::prelude::*;
 use anchor_spl::token::Token;
 use light_verifier_sdk::{light_transaction::VERIFIER_STATE_SEED, state::VerifierState10Ins};
-use merkle_tree_program::program::MerkleTreeProgram;
+use merkle_tree_program::{program::MerkleTreeProgram, EventMerkleTree};
 use merkle_tree_program::transaction_merkle_tree::state::TransactionMerkleTree;
 use merkle_tree_program::utils::constants::TOKEN_AUTHORITY_SEED;
 use verifier_program_two::{self, program::VerifierProgramTwo};
@@ -80,6 +80,8 @@ pub struct LightInstructionThird<'info, const NR_CHECKED_INPUTS: usize> {
     pub verifier_program: Program<'info, VerifierProgramTwo>,
     /// CHECK:` It get checked inside the event_call
     pub log_wrapper: UncheckedAccount<'info>,
+    #[account(mut)]
+    pub event_merkle_tree: AccountLoader<'info, EventMerkleTree>,
 }
 
 #[derive(Debug)]
