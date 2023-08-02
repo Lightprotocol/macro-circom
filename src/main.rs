@@ -446,7 +446,7 @@ fn generate_circom_main_string(instance: &Instance, file_name: &str) -> String {
     format!(
         "pragma circom 2.0.0;\n\
          include \"./{}.circom\";\n\
-         component main {{public [{}]}} =  {}({}{} 18, 4, 4, 24603683191960664281975569809895794547840992286820815015841170051925534051, 0, {}, 3, 2, 2);",
+         component main {{public [{}]}} =  {}({}{} 18, 4, 4, 184598798020101492503359154328231866914977581098629757339001774613643340069, 0, {}, 3, 2, 2);",
          file_name, inputs_str, name, config_str, if config_str.is_empty() { "" } else { "," }, nr_app_utoxs
     )
 }
@@ -597,7 +597,7 @@ mod tests {
 
         let expected_string = "pragma circom 2.0.0;\n\
             include \"./circuit.circom\";\n\
-            component main {public [transactionHash, publicAppVerifier]} =  AppTransaction(7, 1, 18, 4, 4, 24603683191960664281975569809895794547840992286820815015841170051925534051, 0, 1, 3, 2, 2);";
+            component main {public [transactionHash, publicAppVerifier]} =  AppTransaction(7, 1, 18, 4, 4, 184598798020101492503359154328231866914977581098629757339001774613643340069, 0, 1, 3, 2, 2);";
 
         assert_eq!(
             generate_circom_main_string(&instance, "circuit"),
@@ -620,7 +620,7 @@ mod tests {
 
         let expected_string = "pragma circom 2.0.0;\n\
             include \"./circuit.circom\";\n\
-            component main {public [transactionHash, publicAppVerifier]} =  AppTransaction(7, 1, 3, 2, 18, 4, 4, 24603683191960664281975569809895794547840992286820815015841170051925534051, 0, 1, 3, 2, 2);";
+            component main {public [transactionHash, publicAppVerifier]} =  AppTransaction(7, 1, 3, 2, 18, 4, 4, 184598798020101492503359154328231866914977581098629757339001774613643340069, 0, 1, 3, 2, 2);";
 
         assert_eq!(
             generate_circom_main_string(&instance, "circuit"),
@@ -644,7 +644,7 @@ mod tests {
 
         let incorrect_expected_string = "pragma circom 2.0.0;\n\
             include \"./circuit.circom\";\n\
-            component main {public [transactionHash, publicAppVerifier]} =  AppTransaction(7, 2 ,18, 4, 4, 24603683191960664281975569809895794547840992286820815015841170051925534051, 0, 1, 3, 2, 2);";
+            component main {public [transactionHash, publicAppVerifier]} =  AppTransaction(7, 2 ,18, 4, 4, 184598798020101492503359154328231866914977581098629757339001774613643340069, 0, 1, 3, 2, 2);";
 
         assert_eq!(
             generate_circom_main_string(&instance, "circuit"),
