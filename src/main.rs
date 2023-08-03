@@ -223,34 +223,68 @@ fn generate_instruction_hash_code(input: String) -> (String, Vec<String>) {
             non_array_variables += 1;
         }
         output_variable_names.push(String::from(*var));
-        output.push_str(&format!("signal input {};\n", var));
+        output.push_str(&format!("signal input {}[nAppUtxos];\n", var));
     }
     if non_array_variables != 0 {
         array_variables.insert(0, non_array_variables.to_string());
     }
     output.push_str(
         format!(
-            "component instructionHasher = Poseidon({});\n",
-            array_variables.join(" + ")
+            "component instructionHasher[nAppUtxos];\n
+            component checkInstructionHash[nAppUtxos][nIns];\n"
         )
         .as_str(),
     );
+
+//     signal input gameCommitmentHash;
+// component instructionHasher[nAppUtxos];
+// component checkInstructionHash[nAppUtxos][nIns];
+// signal input isAppInUtxo[nAppUtxos][nIns];
+
+// for (var appUtxoIndex = 0; appUtxoIndex < nAppUtxos; appUtxoIndex++) {
+//     instructionHasher[nAppUtxos] = Poseidon(1)
+//    instructionHasher[appUtxoIndex].inputs[0] <== gameCommitmentHash;
+//    for (var inUtxoIndex = 0; inUtxoIndex < nIns; inUtxoIndex++) {
+//         checkInstructionHash[appUtxoIndex][inUtxoIndex] = ForceEqualIfEnabled();
+//         checkInstructionHash[appUtxoIndex][inUtxoIndex].in[0] <== inAppDataHash[inUtxoIndex];
+//         checkInstructionHash[appUtxoIndex][inUtxoIndex].in[1] <== instructionHasher[appUtxoIndex].out;
+//         checkInstructionHash[appUtxoIndex][inUtxoIndex].enabled <== isAppInUtxo[appUtxoIndex][inUtxoIndex];
+//    }
+// }
+
     // if non_array_variables != 0 {
     //     array_variables.pop();
     // }
-    let mut array_i = 1;
+    output.push_str(
+        format!(
+            "for (var appUtxoIndex = 0; appUtxoIndex < nAppUtxos; appUtxoIndex++) {{
+            \tinstructionHasher[appUtxoIndex] = Poseidon({});\n",
+            non_array_variables.to_string()
+        )
+        .as_str(),
+    );
+    // let mut array_i = 1;
     for (i, var) in variables.iter().enumerate() {
         if var.contains('[') && var.contains(']') {
-            let split_var: Vec<&str> = var.split_terminator('[').collect();
-            output.push_str(&format!(
-                "for ( var i = 0; i < {}; i++) {{\n    instructionHasher.inputs[i + {}] <== {}[i];\n}}\n",
-                array_variables[array_i], array_variables[0..array_i].join(" + "), split_var[0]
-            ));
-            array_i += 1;
+            unimplemented!("arrays not supported yet");
+            //TODO: add support for arrays
+            // let split_var: Vec<&str> = var.split_terminator('[').collect();
+            // output.push_str(&format!(
+            //     "for ( var i = 0; i < {}; i++) {{\n    instructionHasher[appUtxoIndex].inputs[i + {}] <== {}[i];\n}}\n",
+            //     array_variables[array_i], array_variables[0..array_i].join(" + "), split_var[0]
+            // ));
+            // array_i += 1;
         } else {
-            output.push_str(&format!("instructionHasher.inputs[{}] <== {};\n", i, var));
+            output.push_str(&format!("instructionHasher[appUtxoIndex].inputs[{}] <== {}[appUtxoIndex];\n", i, var));
         }
     }
+    output.push_str("for (var inUtxoIndex = 0; inUtxoIndex < nIns; inUtxoIndex++) {
+        checkInstructionHash[appUtxoIndex][inUtxoIndex] = ForceEqualIfEnabled();
+        checkInstructionHash[appUtxoIndex][inUtxoIndex].in[0] <== inAppDataHash[inUtxoIndex];
+        checkInstructionHash[appUtxoIndex][inUtxoIndex].in[1] <== instructionHasher[appUtxoIndex].out;
+        checkInstructionHash[appUtxoIndex][inUtxoIndex].enabled <== isAppInUtxo[appUtxoIndex][inUtxoIndex];
+   }\n
+    }\n");
     (output, output_variable_names)
 }
 
@@ -306,7 +340,7 @@ fn parse_light_transaction(
         if found_bracket {
             if line.starts_with("template") {
                 instance.template_name = extract_template_name(line);
-                let to_insert = &format!("{} levels, nIns, nOuts, feeAsset, indexFeeAsset, indexPublicAsset, nAssets, nInAssets, nOutAssets", if instance.config.is_empty() { "" } else { "," });
+                let to_insert = &format!("{} nAppUtxos, levels, nIns, nOuts, feeAsset, indexFeeAsset, indexPublicAsset, nAssets, nInAssets, nOutAssets", if instance.config.is_empty() { "" } else { "," });
                 remaining_lines.push(insert_string_before_parenthesis(line, to_insert));
                 remaining_lines
                     .push(connecting_hash_circom::CONNECTING_HASH_VERIFIER_TWO.to_string());
@@ -446,7 +480,7 @@ fn generate_circom_main_string(instance: &Instance, file_name: &str) -> String {
     format!(
         "pragma circom 2.0.0;\n\
          include \"./{}.circom\";\n\
-         component main {{public [{}]}} =  {}({}{} 18, 4, 4, 184598798020101492503359154328231866914977581098629757339001774613643340069, 0, {}, 3, 2, 2);",
+         component main {{public [{}]}} =  {}({}{} {}, 18, 4, 4, 184598798020101492503359154328231866914977581098629757339001774613643340069, 0, 1, 3, 2, 2);",
          file_name, inputs_str, name, config_str, if config_str.is_empty() { "" } else { "," }, nr_app_utoxs
     )
 }
