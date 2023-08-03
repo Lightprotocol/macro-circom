@@ -1,8 +1,8 @@
 pub mod connecting_hash_circom;
 pub mod errors;
-pub mod light_utils_string;
+pub mod auto_generated_accounts_template;
 use crate::errors::MacroCircomError;
-use crate::light_utils_string::{PART_ONE, PART_TWO};
+use crate::auto_generated_accounts_template::AUTO_GENERATED_ACCOUNTS_TEMPLATE;
 use anyhow::{anyhow, Error as AnyhowError};
 use core::panic;
 use errors::MacroCircomError::*;
@@ -137,17 +137,15 @@ fn create_light_utils_str(
     utxo_app_data_rust_idl_string: String,
     instance: Instance,
 ) -> String {
-    let mut result = String::from(PART_ONE);
+    let mut result = String::from(AUTO_GENERATED_ACCOUNTS_TEMPLATE);
     let nr_public_inputs = format!(
         "pub const NR_CHECKED_INPUTS: usize = {};",
         instance.public_inputs.len()
     );
     result = format!("{}\n{}\n", result, nr_public_inputs);
     result = format!("{}\n{}\n", result, public_inputs_rust_idl_string);
-    result = format!("{}\n{}\n", result, PART_TWO);
     result = format!("{}\n{}\n", result, utxo_rust_idl_string);
     result = format!("{}\n{}\n", result, utxo_app_data_rust_idl_string);
-    // result = format!("{}\n{}\n", result, ";");
     result
 }
 
