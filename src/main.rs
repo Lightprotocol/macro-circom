@@ -122,13 +122,14 @@ fn main() -> Result<(), AnyhowError> {
         instance,
     );
     let mut output_file_idl =
-        fs::File::create("./programs/".to_owned() + &program_name + "/src/light_utils.rs").unwrap();
+        fs::File::create("./programs/".to_owned() + &program_name + "/src/auto_generated_accounts.rs").unwrap();
     write!(&mut output_file_idl, "{}", light_utils_str).unwrap();
     Ok(())
 }
 
 pub const UTXO_APP_DATA_STRUCT_BASE: &str = "#[allow(non_snake_case)]
 #[account]
+#[derive(Debug, Copy, PartialEq)]
 pub struct UtxoAppData {";
 
 fn create_light_utils_str(
@@ -148,7 +149,8 @@ fn create_light_utils_str(
     result = format!("{}\n{}\n", result, utxo_app_data_rust_idl_string);
     result
 }
-
+/// searched for the first instance of the pattern
+/// then parses the lines between the brackets following the pattern
 fn parse_general(
     input: &String,
     starting_string: &String,
@@ -202,10 +204,15 @@ fn parse_general(
         }
     }
     let (res, variable_vec) = parse_between_brackets_fn(bracket_str.join("\n"));
+    let cleaned_vec: Vec<String> = variable_vec
+    .into_iter()
+    .filter(|entry| entry.chars().any(|c| c != ' ' && c != ','))
+    .collect();
+
     if !found_instance && critical {
         return Err(ParseInstanceError(input.to_string()));
     }
-    Ok((res, remaining_lines.join("\n"), variable_vec))
+    Ok((res, remaining_lines.join("\n"), cleaned_vec))
 }
 
 fn generate_instruction_hash_code(input: String) -> (String, Vec<String>) {
@@ -485,15 +492,16 @@ fn generate_circom_main_string(instance: &Instance, file_name: &str) -> String {
 
 const UTXO_STRUCT_BASE: &str = "\
 #[allow(non_snake_case)]
+#[derive(Debug, Copy, PartialEq)]
 #[account]
 pub struct Utxo {
-    amounts: [u64; 2],
-    spl_asset_index: u64,
-    verifier_address_index: u64,
-    blinding: u256,
-    app_data_hash: u256,
-    account_shielded_public_key: u256,
-    account_encryption_public_key: [u8; 32],";
+    pub amounts: [u64; 2],
+    pub spl_asset_index: u64,
+    pub verifier_address_index: u64,
+    pub blinding: u256,
+    pub app_data_hash: u256,
+    pub account_shielded_public_key: u256,
+    pub account_encryption_public_key: [u8; 32],";
 
 const PUBLIC_INPUTS_INSTRUCTION_DATA_BASE: &str = "#[allow(non_snake_case)]
 #[derive(Debug)]
@@ -504,7 +512,7 @@ pub fn create_rust_idl(base: &str, public_inputs: &Vec<String>, input_type: &str
     let mut result = String::from(base);
 
     for input in public_inputs {
-        result = format!("{}\n    {}: {},", result, input, input_type);
+        result = format!("{}\n    pub {}: {},", result, input, input_type);
     }
 
     result.push_str("\n}");
@@ -803,17 +811,18 @@ mod tests {
 
         let expected_output = String::from(
             "#[allow(non_snake_case)]
+            #[derive(Debug, Copy, PartialEq)]
 #[account]
 pub struct Utxo {
-    amounts: [u64; 2],
-    spl_asset_index: u64,
-    verifier_address_index: u64,
-    blinding: u256,
-    app_data_hash: u256,
-    account_shielded_public_key: u256,
-    account_encryption_public_key: [u8; 32],
-    release_slot: u256,
-    other_slot: u256,
+    pub amounts: [u64; 2],
+    pub spl_asset_index: u64,
+    pub verifier_address_index: u64,
+    pub blinding: u256,
+    pub app_data_hash: u256,
+    pub account_shielded_public_key: u256,
+    pub account_encryption_public_key: [u8; 32],
+    pub release_slot: u256,
+    pub other_slot: u256,
 }",
         );
 

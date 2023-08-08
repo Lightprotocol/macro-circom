@@ -8,7 +8,8 @@ pub const AUTO_GENERATED_ACCOUNTS_TEMPLATE: &str = "use anchor_lang::prelude::*;
     #[allow(non_camel_case_types)]
     // helper struct to create anchor idl with u256 type
     #[account]
+    #[derive(Debug, Copy, PartialEq)]
     pub struct u256 {
-        x: [u8; 32],
+        pub x: [u8; 32],
     }
  ";
