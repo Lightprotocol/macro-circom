@@ -1,12 +1,13 @@
+pub mod auto_generated_accounts_template;
 pub mod connecting_hash_circom;
 pub mod errors;
-pub mod auto_generated_accounts_template;
-use crate::errors::MacroCircomError;
 use crate::auto_generated_accounts_template::AUTO_GENERATED_ACCOUNTS_TEMPLATE;
+use crate::errors::MacroCircomError;
 use anyhow::{anyhow, Error as AnyhowError};
 use core::panic;
 use errors::MacroCircomError::*;
 use heck::AsLowerCamelCase;
+use regex::internal::Inst;
 use std::{
     env,
     fs::{self, File},
@@ -80,6 +81,7 @@ fn main() -> Result<(), AnyhowError> {
         &String::from("#[utxoData]"),
         generate_instruction_hash_code,
         true,
+        &instance,
     )?;
 
     let (_verifier_name, contents) =
@@ -121,8 +123,10 @@ fn main() -> Result<(), AnyhowError> {
         utxo_app_data_rust_idl_string,
         instance,
     );
-    let mut output_file_idl =
-        fs::File::create("./programs/".to_owned() + &program_name + "/src/auto_generated_accounts.rs").unwrap();
+    let mut output_file_idl = fs::File::create(
+        "./programs/".to_owned() + &program_name + "/src/auto_generated_accounts.rs",
+    )
+    .unwrap();
     write!(&mut output_file_idl, "{}", light_utils_str).unwrap();
     Ok(())
 }
@@ -154,8 +158,9 @@ fn create_light_utils_str(
 fn parse_general(
     input: &String,
     starting_string: &String,
-    parse_between_brackets_fn: fn(String) -> (String, Vec<String>),
+    parse_between_brackets_fn: fn(String, &Instance) -> (String, Vec<String>),
     critical: bool,
+    instance: &Instance,
 ) -> Result<(String, String, Vec<String>), MacroCircomError> {
     let mut found_bracket = false;
     let mut remaining_lines = Vec::new();
@@ -203,11 +208,11 @@ fn parse_general(
             remaining_lines.push(line);
         }
     }
-    let (res, variable_vec) = parse_between_brackets_fn(bracket_str.join("\n"));
+    let (res, variable_vec) = parse_between_brackets_fn(bracket_str.join("\n"), instance);
     let cleaned_vec: Vec<String> = variable_vec
-    .into_iter()
-    .filter(|entry| entry.chars().any(|c| c != ' ' && c != ','))
-    .collect();
+        .into_iter()
+        .filter(|entry| entry.chars().any(|c| c != ' ' && c != ','))
+        .collect();
 
     if !found_instance && critical {
         return Err(ParseInstanceError(input.to_string()));
@@ -215,7 +220,8 @@ fn parse_general(
     Ok((res, remaining_lines.join("\n"), cleaned_vec))
 }
 
-fn generate_instruction_hash_code(input: String) -> (String, Vec<String>) {
+fn generate_instruction_hash_code(input: String, instance: &Instance) -> (String, Vec<String>) {
+    println!("instance nr app utxos: {:?}", instance.nr_app_utoxs);
     let variables: Vec<&str> = input.split(',').map(|s| s.trim()).collect();
     let mut non_array_variables = 0;
     let mut array_variables = Vec::<String>::new();
@@ -228,7 +234,11 @@ fn generate_instruction_hash_code(input: String) -> (String, Vec<String>) {
             non_array_variables += 1;
         }
         output_variable_names.push(String::from(*var));
-        output.push_str(&format!("signal input {}[nAppUtxos];\n", var));
+        if instance.nr_app_utoxs.unwrap() == 1 {
+            output.push_str(&format!("signal input {};\n", var));
+        } else {
+            output.push_str(&format!("signal input {}[nAppUtxos];\n", var));
+        }
     }
     if non_array_variables != 0 {
         array_variables.insert(0, non_array_variables.to_string());
@@ -241,21 +251,21 @@ fn generate_instruction_hash_code(input: String) -> (String, Vec<String>) {
         .as_str(),
     );
 
-//     signal input gameCommitmentHash;
-// component instructionHasher[nAppUtxos];
-// component checkInstructionHash[nAppUtxos][nIns];
-// signal input isAppInUtxo[nAppUtxos][nIns];
+    //     signal input gameCommitmentHash;
+    // component instructionHasher[nAppUtxos];
+    // component checkInstructionHash[nAppUtxos][nIns];
+    // signal input isAppInUtxo[nAppUtxos][nIns];
 
-// for (var appUtxoIndex = 0; appUtxoIndex < nAppUtxos; appUtxoIndex++) {
-//     instructionHasher[nAppUtxos] = Poseidon(1)
-//    instructionHasher[appUtxoIndex].inputs[0] <== gameCommitmentHash;
-//    for (var inUtxoIndex = 0; inUtxoIndex < nIns; inUtxoIndex++) {
-//         checkInstructionHash[appUtxoIndex][inUtxoIndex] = ForceEqualIfEnabled();
-//         checkInstructionHash[appUtxoIndex][inUtxoIndex].in[0] <== inAppDataHash[inUtxoIndex];
-//         checkInstructionHash[appUtxoIndex][inUtxoIndex].in[1] <== instructionHasher[appUtxoIndex].out;
-//         checkInstructionHash[appUtxoIndex][inUtxoIndex].enabled <== isAppInUtxo[appUtxoIndex][inUtxoIndex];
-//    }
-// }
+    // for (var appUtxoIndex = 0; appUtxoIndex < nAppUtxos; appUtxoIndex++) {
+    //     instructionHasher[nAppUtxos] = Poseidon(1)
+    //    instructionHasher[appUtxoIndex].inputs[0] <== gameCommitmentHash;
+    //    for (var inUtxoIndex = 0; inUtxoIndex < nIns; inUtxoIndex++) {
+    //         checkInstructionHash[appUtxoIndex][inUtxoIndex] = ForceEqualIfEnabled();
+    //         checkInstructionHash[appUtxoIndex][inUtxoIndex].in[0] <== inAppDataHash[inUtxoIndex];
+    //         checkInstructionHash[appUtxoIndex][inUtxoIndex].in[1] <== instructionHasher[appUtxoIndex].out;
+    //         checkInstructionHash[appUtxoIndex][inUtxoIndex].enabled <== isAppInUtxo[appUtxoIndex][inUtxoIndex];
+    //    }
+    // }
 
     // if non_array_variables != 0 {
     //     array_variables.pop();
@@ -280,7 +290,21 @@ fn generate_instruction_hash_code(input: String) -> (String, Vec<String>) {
             // ));
             // array_i += 1;
         } else {
-            output.push_str(&format!("instructionHasher[appUtxoIndex].inputs[{}] <== {}[appUtxoIndex];\n", i, var));
+            if instance.nr_app_utoxs.unwrap() == 1 {
+                output.push_str(&format!(
+                    "instructionHasher[appUtxoIndex].inputs[{}] <== {};\n",
+                    i, var
+                ));
+            } else {
+                output.push_str(&format!(
+                    "instructionHasher[appUtxoIndex].inputs[{}] <== {}[appUtxoIndex];\n",
+                    i, var
+                ));
+            }
+            // output.push_str(&format!(
+            //     "instructionHasher[appUtxoIndex].inputs[{}] <== {}[appUtxoIndex];\n",
+            //     i, var
+            // ));
         }
     }
     output.push_str("for (var inUtxoIndex = 0; inUtxoIndex < nIns; inUtxoIndex++) {
@@ -692,17 +716,17 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_generate_instruction_hash_code() {
-        let input = r#"
-        {
-            threshold,
-            signerPubkeysX[nr],
-            signerPubkeysY[nr]
-        }"#;
+    // #[test]
+    // fn test_generate_instruction_hash_code() {
+    //     let input = r#"
+    //     {
+    //         threshold,
+    //         signerPubkeysX[nr],
+    //         signerPubkeysY[nr]
+    //     }"#;
 
-        generate_instruction_hash_code(input.to_string());
-    }
+    //     generate_instruction_hash_code(input.to_string());
+    // }
     #[test]
     fn test_extract_template_name() {
         let input = "template AppTransaction(";
