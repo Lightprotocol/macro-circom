@@ -487,7 +487,7 @@ fn parse_instance(input: &String) -> Result<(Instance, String), MacroCircomError
             file_name,
             config,
             nr_app_utxos,
-            public_inputs: public_inputs,
+            public_inputs,
             template_name: None,
         },
         remaining_lines.join("\n"),
@@ -496,7 +496,7 @@ fn parse_instance(input: &String) -> Result<(Instance, String), MacroCircomError
 
 fn parse_public_input(input: &str) -> Vec<String> {
     let inner = get_string_between_brackets(input).unwrap();
-    inner.split(",").map(|s| s.trim().to_string()).collect()
+    inner.split(',').map(|s| s.trim().to_string()).collect()
 }
 
 fn generate_circom_main_string(instance: &Instance, file_name: &str) -> String {
@@ -666,7 +666,7 @@ mod tests {
 
         let expected_string = "pragma circom 2.1.4;\n\
             include \"./circuit.circom\";\n\
-            component main {public [transactionHash, publicAppVerifier]} =  AppTransaction(7, 1, 18, 4, 4, 184598798020101492503359154328231866914977581098629757339001774613643340069, 0, 1, 3, 2, 2);";
+            component main {public [transactionHash, publicAppVerifier]} =  AppTransaction(7, 1, 1, 18, 4, 4, 184598798020101492503359154328231866914977581098629757339001774613643340069, 0, 1, 3, 2, 2);";
 
         assert_eq!(
             generate_circom_main_string(&instance, "circuit"),
@@ -689,7 +689,7 @@ mod tests {
 
         let expected_string = "pragma circom 2.1.4;\n\
             include \"./circuit.circom\";\n\
-            component main {public [transactionHash, publicAppVerifier]} =  AppTransaction(7, 1, 3, 2, 18, 4, 4, 184598798020101492503359154328231866914977581098629757339001774613643340069, 0, 1, 3, 2, 2);";
+            component main {public [transactionHash, publicAppVerifier]} =  AppTransaction(7, 1, 3, 2, 1, 18, 4, 4, 184598798020101492503359154328231866914977581098629757339001774613643340069, 0, 1, 3, 2, 2);";
 
         assert_eq!(
             generate_circom_main_string(&instance, "circuit"),
@@ -840,7 +840,7 @@ mod tests {
 
         let expected_output = String::from(
             "#[allow(non_snake_case)]
-            #[derive(Debug, Copy, PartialEq)]
+#[derive(Debug, Copy, PartialEq)]
 #[account]
 pub struct Utxo {
     pub amounts: [u64; 2],
@@ -866,10 +866,9 @@ pub struct Utxo {
 #[derive(Debug)]
 #[account]
 pub struct InstructionDataLightInstructionSecond {
-    current_slot: u256,
-    other_slot: u256,
+    pub current_slot: u256,
+    pub other_slot: u256,
 }";
-
         assert_eq!(output, expected_output);
     }
 }
