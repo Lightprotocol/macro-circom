@@ -226,7 +226,6 @@ fn parse_general(
 }
 
 fn generate_instruction_hash_code(input: String, instance: &Instance) -> (String, Vec<String>) {
-    println!("instance nr app utxos: {:?}", instance.nr_app_utxos);
     let variables: Vec<&str> = input.split(',').map(|s| s.trim()).collect();
     let mut non_array_variables = 0;
     let mut array_variables = Vec::<String>::new();
