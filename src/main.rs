@@ -43,12 +43,26 @@ struct Instance {
 // - circom file with circuit
 // TODO: rust file with public inputs, sytem publicAppVerifier, as anchor constants
 
-fn extract_string_between_slash_and_dot_light(input: &str) -> Option<String> {
-    let mut parts = input.rsplitn(2, '/');
-    let part_after_slash = parts.next()?;
-    let dot_light_index = part_after_slash.find(".light")?;
+use std::path::Path;
 
-    Some(part_after_slash[..dot_light_index].to_string())
+fn remove_filename_suffix(input: &str) -> Result<(String, String), &'static str> {
+    let path = Path::new(input);
+
+    if path.extension() != Some(std::ffi::OsStr::new("light")) {
+        return Err("The file does not have a .light suffix");
+    }
+
+    let directory = path
+        .parent()
+        .map_or(input, |p| p.to_str().unwrap_or(input))
+        .to_string();
+    let filename_without_suffix = path
+        .file_stem()
+        .map_or("", |f| f.to_str().unwrap_or(""))
+        .to_string();
+    println!("directory: {}", directory);
+    println!("filename_without_suffix: {}", filename_without_suffix);
+    Ok((directory, filename_without_suffix))
 }
 
 // throw error when no utxoData -> doesn't make sense
@@ -66,7 +80,7 @@ fn main() -> Result<(), AnyhowError> {
     let file_path = &args[1];
     let program_name = &args[2];
 
-    let file_name = extract_string_between_slash_and_dot_light(file_path).unwrap();
+    let (path_to_parent_dir, file_name) = remove_filename_suffix(file_path).unwrap();
     // Open the file
     let mut file = File::open(file_path).expect("Unable to open the file");
 
@@ -92,13 +106,14 @@ fn main() -> Result<(), AnyhowError> {
         parse_light_transaction(&contents, &instruction_hash_code, &mut instance).unwrap();
 
     let mut output_file =
-        fs::File::create("./circuit/".to_owned() + &file_name + ".circom").unwrap();
+        fs::File::create(path_to_parent_dir.clone() + "/" + &file_name + ".circom").unwrap();
 
     write!(&mut output_file, "{}\n{}", DISCLAIMER_STRING, contents).unwrap();
 
     let mut output_file = fs::File::create(
         [
-            &"./circuit/",
+            &path_to_parent_dir.to_string(),
+            "/",
             instance.file_name.as_str().clone(),
             &".circom",
         ]
