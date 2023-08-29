@@ -1,4 +1,5 @@
 pub mod auto_generated_accounts_template;
+pub mod checkUtxo;
 pub mod connecting_hash_circom;
 pub mod errors;
 use crate::auto_generated_accounts_template::AUTO_GENERATED_ACCOUNTS_TEMPLATE;
@@ -20,7 +21,7 @@ const DISCLAIMER_STRING: &str = "/**
 * THE FILE WILL BE OVERWRITTEN EVERY TIME THE LIGHT CLI BUILD IS RUN.
 */";
 #[derive(Debug, PartialEq)]
-struct Instance {
+pub struct Instance {
     file_name: String,
     template_name: Option<String>,
     config: Vec<u32>,
@@ -94,60 +95,60 @@ fn main() -> Result<(), AnyhowError> {
         return Err(anyhow!(InvalidNumberAppUtxos));
     }
 
-    let (instruction_hash_code, contents, utxo_data_variable_names) = parse_general(
-        &contents,
-        &String::from("#[utxoData]"),
-        generate_instruction_hash_code,
-        true,
-        &instance,
-    )?;
+    // let (instruction_hash_code, contents, utxo_data_variable_names) = parse_general(
+    //     &contents,
+    //     &String::from("#[utxoData]"),
+    //     generate_instruction_hash_code,
+    //     true,
+    //     &instance,
+    // )?;
 
-    let (_verifier_name, contents) =
-        parse_light_transaction(&contents, &instruction_hash_code, &mut instance).unwrap();
+    // let (_verifier_name, contents) =
+    //     parse_light_transaction(&contents, &instruction_hash_code, &mut instance).unwrap();
 
-    let mut output_file =
-        fs::File::create(path_to_parent_dir.clone() + "/" + &file_name + ".circom").unwrap();
+    // let mut output_file =
+    //     fs::File::create(path_to_parent_dir.clone() + "/" + &file_name + ".circom").unwrap();
 
-    write!(&mut output_file, "{}\n{}", DISCLAIMER_STRING, contents).unwrap();
+    // write!(&mut output_file, "{}\n{}", DISCLAIMER_STRING, contents).unwrap();
 
-    let mut output_file = fs::File::create(
-        [
-            &path_to_parent_dir.to_string(),
-            "/",
-            instance.file_name.as_str().clone(),
-            &".circom",
-        ]
-        .concat(),
-    )
-    .unwrap();
-    let instance_str = generate_circom_main_string(&instance, &file_name);
-    println!(
-        "sucessfully created main {}.circom and {}.circom",
-        instance.file_name, file_name
-    );
+    // let mut output_file = fs::File::create(
+    //     [
+    //         &path_to_parent_dir.to_string(),
+    //         "/",
+    //         instance.file_name.as_str().clone(),
+    //         &".circom",
+    //     ]
+    //     .concat(),
+    // )
+    // .unwrap();
+    // let instance_str = generate_circom_main_string(&instance, &file_name);
+    // println!(
+    //     "sucessfully created main {}.circom and {}.circom",
+    //     instance.file_name, file_name
+    // );
 
-    write!(&mut output_file, "{}\n{}", DISCLAIMER_STRING, instance_str).unwrap();
-    // output_file.write_all(&rustfmt(instance_str)?)?;
-    let utxo_rust_idl_string = create_rust_idl(UTXO_STRUCT_BASE, &utxo_data_variable_names, "u256");
-    let public_inputs_rust_idl_string = create_rust_idl(
-        PUBLIC_INPUTS_INSTRUCTION_DATA_BASE,
-        &instance.public_inputs[..instance.public_inputs.len() - 2].to_vec(),
-        "[u8; 32]",
-    );
-    let utxo_app_data_rust_idl_string =
-        create_rust_idl(UTXO_APP_DATA_STRUCT_BASE, &utxo_data_variable_names, "u256");
+    // write!(&mut output_file, "{}\n{}", DISCLAIMER_STRING, instance_str).unwrap();
+    // // output_file.write_all(&rustfmt(instance_str)?)?;
+    // let utxo_rust_idl_string = create_rust_idl(UTXO_STRUCT_BASE, &utxo_data_variable_names, "u256");
+    // let public_inputs_rust_idl_string = create_rust_idl(
+    //     PUBLIC_INPUTS_INSTRUCTION_DATA_BASE,
+    //     &instance.public_inputs[..instance.public_inputs.len() - 2].to_vec(),
+    //     "[u8; 32]",
+    // );
+    // let utxo_app_data_rust_idl_string =
+    //     create_rust_idl(UTXO_APP_DATA_STRUCT_BASE, &utxo_data_variable_names, "u256");
 
-    let light_utils_str = create_light_utils_str(
-        utxo_rust_idl_string,
-        public_inputs_rust_idl_string,
-        utxo_app_data_rust_idl_string,
-        instance,
-    );
-    let mut output_file_idl = fs::File::create(
-        "./programs/".to_owned() + &program_name + "/src/auto_generated_accounts.rs",
-    )
-    .unwrap();
-    write!(&mut output_file_idl, "{}", light_utils_str).unwrap();
+    // let light_utils_str = create_light_utils_str(
+    //     utxo_rust_idl_string,
+    //     public_inputs_rust_idl_string,
+    //     utxo_app_data_rust_idl_string,
+    //     instance,
+    // );
+    // let mut output_file_idl = fs::File::create(
+    //     "./programs/".to_owned() + &program_name + "/src/auto_generated_accounts.rs",
+    // )
+    // .unwrap();
+    // write!(&mut output_file_idl, "{}", light_utils_str).unwrap();
     Ok(())
 }
 
@@ -172,168 +173,6 @@ fn create_light_utils_str(
     result = format!("{}\n{}\n", result, utxo_rust_idl_string);
     result = format!("{}\n{}\n", result, utxo_app_data_rust_idl_string);
     result
-}
-/// searched for the first instance of the pattern
-/// then parses the lines between the brackets following the pattern
-fn parse_general(
-    input: &String,
-    starting_string: &String,
-    parse_between_brackets_fn: fn(String, &Instance) -> (String, Vec<String>),
-    critical: bool,
-    instance: &Instance,
-) -> Result<(String, String, Vec<String>), MacroCircomError> {
-    let mut found_bracket = false;
-    let mut remaining_lines = Vec::new();
-    let mut found_instance = false;
-    let mut commented = false;
-    let mut bracket_str = Vec::<&str>::new();
-    for line in input.lines() {
-        let line = line.trim();
-        if line.starts_with("//") {
-            continue;
-        }
-        if line.starts_with("/* ") || line.starts_with("/**") {
-            commented = true;
-            remaining_lines.push(line);
-            continue;
-        }
-        if commented {
-            remaining_lines.push(line);
-            if line.find("*/").is_some() {
-                commented = false;
-            }
-            continue;
-        }
-        if line.starts_with(starting_string) {
-            // cannot accept overloads implementations
-            if found_instance == true {
-                panic!();
-            };
-            found_instance = true;
-            found_bracket = true;
-            continue;
-        }
-        if found_instance && line.starts_with("{") {
-            continue;
-        }
-        if found_bracket && found_instance && line.starts_with("}") {
-            found_bracket = false;
-            continue;
-        }
-
-        if found_bracket {
-            bracket_str.push(line);
-        }
-        if !found_bracket {
-            remaining_lines.push(line);
-        }
-    }
-    let (res, variable_vec) = parse_between_brackets_fn(bracket_str.join("\n"), instance);
-    let cleaned_vec: Vec<String> = variable_vec
-        .into_iter()
-        .filter(|entry| entry.chars().any(|c| c != ' ' && c != ','))
-        .collect();
-
-    if !found_instance && critical {
-        return Err(ParseInstanceError(input.to_string()));
-    }
-    Ok((res, remaining_lines.join("\n"), cleaned_vec))
-}
-
-fn generate_instruction_hash_code(input: String, instance: &Instance) -> (String, Vec<String>) {
-    let variables: Vec<&str> = input.split(',').map(|s| s.trim()).collect();
-    let mut non_array_variables = 0;
-    let mut array_variables = Vec::<String>::new();
-    let mut output = String::new();
-    let mut output_variable_names = Vec::<String>::new();
-    for var in &variables {
-        if var.contains('[') && var.contains(']') {
-            array_variables.push(get_string_between_brackets(var).unwrap().to_string());
-        } else {
-            non_array_variables += 1;
-        }
-        output_variable_names.push(String::from(*var));
-        if instance.nr_app_utxos.unwrap() == 1 {
-            output.push_str(&format!("signal input {};\n", var));
-        } else {
-            output.push_str(&format!("signal input {}[nAppUtxos];\n", var));
-        }
-    }
-    if non_array_variables != 0 {
-        array_variables.insert(0, non_array_variables.to_string());
-    }
-    output.push_str(
-        format!(
-            "component instructionHasher[nAppUtxos];\n
-            component checkInstructionHash[nAppUtxos][nIns];\n"
-        )
-        .as_str(),
-    );
-
-    //     signal input gameCommitmentHash;
-    // component instructionHasher[nAppUtxos];
-    // component checkInstructionHash[nAppUtxos][nIns];
-    // signal input isAppInUtxo[nAppUtxos][nIns];
-
-    // for (var appUtxoIndex = 0; appUtxoIndex < nAppUtxos; appUtxoIndex++) {
-    //     instructionHasher[nAppUtxos] = Poseidon(1)
-    //    instructionHasher[appUtxoIndex].inputs[0] <== gameCommitmentHash;
-    //    for (var inUtxoIndex = 0; inUtxoIndex < nIns; inUtxoIndex++) {
-    //         checkInstructionHash[appUtxoIndex][inUtxoIndex] = ForceEqualIfEnabled();
-    //         checkInstructionHash[appUtxoIndex][inUtxoIndex].in[0] <== inAppDataHash[inUtxoIndex];
-    //         checkInstructionHash[appUtxoIndex][inUtxoIndex].in[1] <== instructionHasher[appUtxoIndex].out;
-    //         checkInstructionHash[appUtxoIndex][inUtxoIndex].enabled <== isAppInUtxo[appUtxoIndex][inUtxoIndex];
-    //    }
-    // }
-
-    // if non_array_variables != 0 {
-    //     array_variables.pop();
-    // }
-    output.push_str(
-        format!(
-            "for (var appUtxoIndex = 0; appUtxoIndex < nAppUtxos; appUtxoIndex++) {{
-            \tinstructionHasher[appUtxoIndex] = Poseidon({});\n",
-            non_array_variables.to_string()
-        )
-        .as_str(),
-    );
-    // let mut array_i = 1;
-    for (i, var) in variables.iter().enumerate() {
-        if var.contains('[') && var.contains(']') {
-            unimplemented!("arrays not supported yet");
-            //TODO: add support for arrays
-            // let split_var: Vec<&str> = var.split_terminator('[').collect();
-            // output.push_str(&format!(
-            //     "for ( var i = 0; i < {}; i++) {{\n    instructionHasher[appUtxoIndex].inputs[i + {}] <== {}[i];\n}}\n",
-            //     array_variables[array_i], array_variables[0..array_i].join(" + "), split_var[0]
-            // ));
-            // array_i += 1;
-        } else {
-            if instance.nr_app_utxos.unwrap() == 1 {
-                output.push_str(&format!(
-                    "instructionHasher[appUtxoIndex].inputs[{}] <== {};\n",
-                    i, var
-                ));
-            } else {
-                output.push_str(&format!(
-                    "instructionHasher[appUtxoIndex].inputs[{}] <== {}[appUtxoIndex];\n",
-                    i, var
-                ));
-            }
-            // output.push_str(&format!(
-            //     "instructionHasher[appUtxoIndex].inputs[{}] <== {}[appUtxoIndex];\n",
-            //     i, var
-            // ));
-        }
-    }
-    output.push_str("for (var inUtxoIndex = 0; inUtxoIndex < nIns; inUtxoIndex++) {
-        checkInstructionHash[appUtxoIndex][inUtxoIndex] = ForceEqualIfEnabled();
-        checkInstructionHash[appUtxoIndex][inUtxoIndex].in[0] <== inAppDataHash[inUtxoIndex];
-        checkInstructionHash[appUtxoIndex][inUtxoIndex].in[1] <== instructionHasher[appUtxoIndex].out;
-        checkInstructionHash[appUtxoIndex][inUtxoIndex].enabled <== isAppInUtxo[appUtxoIndex][inUtxoIndex];
-   }\n
-    }\n");
-    (output, output_variable_names)
 }
 
 fn get_string_between_brackets(input: &str) -> Option<&str> {

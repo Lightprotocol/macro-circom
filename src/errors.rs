@@ -13,4 +13,14 @@ pub enum MacroCircomError {
     NoInstanceDefined,
     #[error("StringParseError")]
     StringParseError,
+    #[error("CheckUtxoInvalidFormat")]
+    CheckUtxoInvalidFormat,
+    #[error("CheckUtxoInvalidHeaderFormat")]
+    CheckUtxoInvalidHeaderFormat,
+    #[error("PropertyDefinedMultipleTimes")]
+    PropertyDefinedMultipleTimes,
+    #[error("InvalidProperty")]
+    InvalidProperty,
+    #[error("InvalidComparator")]
+    InvalidComparator,
 }
