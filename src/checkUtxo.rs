@@ -2,10 +2,10 @@ use crate::errors::MacroCircomError;
 use crate::errors::MacroCircomError::*;
 use crate::{auto_generated_accounts_template::AUTO_GENERATED_ACCOUNTS_TEMPLATE, Instance};
 use anyhow::{anyhow, Error as AnyhowError};
-use core::panic;
 use heck::{ToLowerCamelCase, ToUpperCamelCase};
 use regex::Regex;
 use std::fmt::format;
+use std::ops::Deref;
 use std::string;
 
 fn generate_input_signal(input: &String) -> String {
@@ -13,7 +13,7 @@ fn generate_input_signal(input: &String) -> String {
     output.push_str(&format!("signal input {};\n", input));
     output
 }
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 
 pub enum Comparator {
     Equal,
@@ -36,7 +36,7 @@ impl Comparator {
         }
     }
 }
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct CheckUtxo {
     pub code: String,
     pub name: String,
@@ -89,7 +89,8 @@ impl CheckUtxo {
 
     pub fn parse_header(header: &str) -> Result<Self, MacroCircomError> {
         let re = Regex::new(r"^#\[\s*checkInUtxo\((?P<name>[a-zA-Z_][a-zA-Z0-9_]*),\s*(?P<no_utxos>\d+)(?:,\s*(?P<instruction_name>[a-zA-Z_][a-zA-Z0-9_]*))?\)\s*\]$").unwrap();
-        println!("{:?}", re.captures(header));
+        println!("header raw  {:?}", header);
+        println!("header {:?}", re.captures(header));
         if let Some(caps) = re.captures(header) {
             let name = caps["name"].to_string().to_upper_camel_case();
             let no_utxos: u64 = caps["no_utxos"]
@@ -129,7 +130,7 @@ impl CheckUtxo {
             // "<" => Ok(Comparator::LessThan),
             // ">=" => Ok(Comparator::GreaterEqualThan),
             // "<=" => Ok(Comparator::LessEqualThan),
-            _ => Err(MacroCircomError::InvalidComparator),
+            _ => Err(MacroCircomError::InvalidComparator(string.to_string())),
         }
     }
 
@@ -147,7 +148,7 @@ impl CheckUtxo {
         }
 
         let comparator = CheckUtxo::match_comparator(parts[1])?;
-
+        println!("Processing parts: {:?}", parts);
         match parts[0] {
             "amountSol" => {
                 if self.amount_sol.is_none() {
@@ -188,14 +189,17 @@ impl CheckUtxo {
     pub fn process_utxo_data_line(&mut self, line: &str) -> Result<(i32), MacroCircomError> {
         let parts: Vec<&str> = line.split_whitespace().collect();
         let re = Regex::new(r"^[, \t\n\r]+|[, \t\n\r]+$").unwrap();
+        println!("Processing utxo data parts: {:?}", parts);
         if parts.contains(&"}") {
             return Ok(2);
         }
+
         if parts.len() == 1 {
-            self.utxo_data
-                .as_mut()
-                .unwrap()
-                .push((parts[0].to_string(), None, None));
+            self.utxo_data.as_mut().unwrap().push((
+                re.replace_all(parts[0], "").to_string(),
+                None,
+                None,
+            ));
             return Ok(1);
         }
 
@@ -205,7 +209,7 @@ impl CheckUtxo {
 
         let comparator = CheckUtxo::match_comparator(parts[1])?;
         self.utxo_data.as_mut().unwrap().push((
-            parts[0].to_string(),
+            re.replace_all(parts[0], "").to_string(),
             Some(comparator),
             Some(re.replace_all(parts[2], "").to_string()),
         ));
@@ -218,8 +222,10 @@ impl CheckUtxo {
             println!("{}", line);
 
             if found_utxo_data == 0 && self.utxo_data.is_some() {
-                found_utxo_data += 1;
+                // found_utxo_data += 1;
+                found_utxo_data = self.process_utxo_data_line(line)?;
             } else if found_utxo_data == 0 {
+                println!("found utxo data ");
                 self.process_line(line)?;
             } else if found_utxo_data == 1 {
                 println!("found utxo data");
@@ -247,6 +253,13 @@ impl CheckUtxo {
         } else {
             return Err(MacroCircomError::CheckUtxoInvalidFormat);
         };
+        let utxo_type_prefix = if self.is_in_utxo {
+            "In"
+        } else if self.is_out_utxo {
+            "Out"
+        } else {
+            return Err(MacroCircomError::CheckUtxoInvalidFormat);
+        };
         self.code.push_str(&format!(
             "var {} = {};\n",
             self.name.to_lower_camel_case(),
@@ -254,7 +267,8 @@ impl CheckUtxo {
         ));
         if self.amount_sol.is_some() {
             self.code.push_str(&format!(
-                "component checkAmountSol{}[{}][{}];\n",
+                "component check{}AmountSol{}[{}][{}];\n",
+                utxo_type_prefix,
                 self.name,
                 self.name.to_lower_camel_case(),
                 utxo_type
@@ -262,7 +276,8 @@ impl CheckUtxo {
         }
         if self.amount_spl.is_some() {
             self.code.push_str(&format!(
-                "component checkAmountSpl{}[{}][{}];\n",
+                "component check{}AmountSpl{}[{}][{}];\n",
+                utxo_type_prefix,
                 self.name,
                 self.name.to_lower_camel_case(),
                 utxo_type
@@ -270,7 +285,8 @@ impl CheckUtxo {
         }
         if self.asset_spl.is_some() {
             self.code.push_str(&format!(
-                "component checkAssetSpl{}[{}][{}];\n",
+                "component check{}AssetSpl{}[{}][{}];\n",
+                utxo_type_prefix,
                 self.name,
                 self.name.to_lower_camel_case(),
                 utxo_type
@@ -278,7 +294,8 @@ impl CheckUtxo {
         }
         if self.app_data_hash.is_some() {
             self.code.push_str(&format!(
-                "component checkAppDataHash{}[{}][{}];\n",
+                "component check{}AppDataHash{}[{}][{}];\n",
+                utxo_type_prefix,
                 self.name,
                 self.name.to_lower_camel_case(),
                 utxo_type
@@ -286,11 +303,16 @@ impl CheckUtxo {
         }
         if self.utxo_data.is_some() {
             for utxo in self.utxo_data.as_ref().unwrap() {
+                if utxo.1.is_none() {
+                    continue;
+                }
                 self.code.push_str(&format!(
-                    "component checkUtxoData{}[{}][{}];\n",
+                    "component check{}UtxoData{}{Name}[{name}][{}];\n",
+                    utxo_type_prefix,
                     utxo.0.to_upper_camel_case(),
-                    self.name.to_lower_camel_case(),
-                    utxo_type
+                    utxo_type,
+                    name = self.name.to_lower_camel_case(),
+                    Name = self.name,
                 ));
             }
             if self.no_utxos > 1 {
@@ -340,137 +362,152 @@ component checkInstructionHash{}[{}];\n",
         };
         self.code
             .push_str(format!("for (var i = 0; i < {}; i++) {{\n", utxo_type).as_str());
-        if self.app_data_hash.is_some() {
-            let app_data_hash: &(Comparator, String) = self.app_data_hash.as_ref().unwrap();
-            self.code.push_str(
-                generate_equal_code(
-                    &self.name,
-                    &format!("{}AppDataHash[i]", utxo_type_prefix),
-                    &app_data_hash.1,
+        let mut generate_equal_code_with_prefix =
+            |condition: &Option<(Comparator, String)>, var: String, idx, value, inst| {
+                // TODO: add match for other comparators
+                if condition.is_some() {
+                    let tuple: &(Comparator, String) = condition.as_ref().unwrap();
+                    let variable_name = format!("{}{}", utxo_type_prefix, var);
+                    self.code.push_str(
+                        generate_equal_code(
+                            &self.name,
+                            &format!("{}{}", value, idx),
+                            &variable_name,
+                            &tuple.1,
+                            inst,
+                            utxo_type_prefix,
+                        )
+                        .as_str(),
+                    );
+                }
+            };
+
+        generate_equal_code_with_prefix(
+            &self.amount_sol,
+            String::from("AmountSol"),
+            ".inputs[0]",
+            format!("{}{}", utxo_type_prefix, String::from("AmountsHasher[i]")),
+            &instruction_name,
+        );
+
+        generate_equal_code_with_prefix(
+            &self.app_data_hash,
+            String::from("AppDataHash"),
+            "",
+            format!("{}{}", utxo_type_prefix, String::from("AppDataHash[i].out")),
+            &instruction_name,
+        );
+
+        generate_equal_code_with_prefix(
+            &self.amount_spl,
+            String::from("AmountSpl"),
+            ".inputs[1]",
+            format!("{}{}", utxo_type_prefix, String::from("AmountsHasher[i]")),
+            &instruction_name,
+        );
+
+        generate_equal_code_with_prefix(
+            &self.asset_spl,
+            String::from("AssetSpl"),
+            ".inputs[4]",
+            format!(
+                "{}{}",
+                utxo_type_prefix,
+                String::from("CommitmentHasher[i]")
+            ),
+            &instruction_name,
+        );
+
+        for utxo in self.utxo_data.as_ref().unwrap() {
+            if let (name, Some(comp), Some(value)) = utxo {
+                let variable_name = format!("UtxoData{}", name.to_upper_camel_case());
+                println!("variable name: {}", variable_name);
+                generate_equal_code_with_prefix(
+                    &(Some(((*comp).clone(), value.clone()))),
+                    variable_name,
+                    "",
+                    name.clone(),
                     &instruction_name,
-                )
-                .as_str(),
-            );
+                );
+            }
         }
 
-        if self.amount_sol.is_some() {
-            let amount_sol: &(Comparator, String) = self.amount_sol.as_ref().unwrap();
-            self.code.push_str(
-                generate_equal_code(
-                    &self.name,
-                    &format!("{}AmountsHasher[i].inputs[0]", utxo_type_prefix),
-                    &amount_sol.1,
-                    &instruction_name,
-                )
-                .as_str(),
-            );
-        }
-
-        if self.amount_spl.is_some() {
-            let amount_spl: &(Comparator, String) = self.amount_spl.as_ref().unwrap();
-            self.code.push_str(
-                generate_equal_code(
-                    &self.name,
-                    &format!("{}AmountsHasher[i].inputs[1]", utxo_type_prefix),
-                    &amount_spl.1,
-                    &instruction_name,
-                )
-                .as_str(),
-            );
-        }
-        if self.asset_spl.is_some() {
-            let asset_spl: &(Comparator, String) = self.asset_spl.as_ref().unwrap();
-            self.code.push_str(
-                generate_equal_code(
-                    &self.name,
-                    &format!("{}CommitmentHasher[i].inputs[4]", utxo_type_prefix),
-                    &asset_spl.1,
-                    &instruction_name,
-                )
-                .as_str(),
-            );
-        }
+        self.code.push_str(format!("}}\n").as_str());
         Ok(())
     }
 
     pub fn generate_instruction_hash_code(&mut self) -> Result<(), MacroCircomError> {
-        if self.utxo_data.is_some() {
-            let utxo_data = self.utxo_data.as_ref().unwrap();
+        let utxo_type_prefix = if self.is_in_utxo {
+            "in"
+        } else if self.is_out_utxo {
+            "out"
+        } else {
+            return Err(MacroCircomError::CheckUtxoInvalidFormat);
+        };
+        if let Some(utxo_data) = &self.utxo_data {
             if self.no_utxos > 1 {
-                self.code.push_str(
-                    format!(
-                        "for (var appUtxoIndex = 0; appUtxoIndex < nAppUtxos; appUtxoIndex++) {{\n
-                    \tinstructionHasher[appUtxoIndex] = Poseidon({});\n",
-                        utxo_data.len()
-                    )
-                    .as_str(),
+                let loop_code = format!(
+                    "for (var appUtxoIndex = 0; appUtxoIndex < nAppUtxos; appUtxoIndex++) {{\n\
+                    \tinstructionHasher{}[appUtxoIndex] = Poseidon({});\n",
+                    self.name.to_upper_camel_case(),
+                    utxo_data.len()
                 );
+                self.code.push_str(&loop_code);
             } else {
-                self.code.push_str(&format!(
+                let hasher_code = format!(
                     "instructionHasher{name} = Poseidon({});\n",
                     utxo_data.len(),
                     name = self.name.to_upper_camel_case()
-                ));
+                );
+                self.code.push_str(&hasher_code);
             }
+
             for (i, var) in utxo_data.iter().enumerate() {
                 if var.0.contains('[') && var.0.contains(']') {
                     unimplemented!("arrays not supported yet");
-                    //TODO: add support for arrays
-                    // let split_var: Vec<&str> = var.split_terminator('[').collect();
-                    // output.push_str(&format!(
-                    //     "for ( var i = 0; i < {}; i++) {{\n    instructionHasher[appUtxoIndex].inputs[i + {}] <== {}[i];\n}}\n",
-                    //     array_variables[array_i], array_variables[0..array_i].join(" + "), split_var[0]
-                    // ));
-                    // array_i += 1;
                 } else {
-                    if self.no_utxos == 1 {
-                        self.code.push_str(&format!(
+                    let input_code = if self.no_utxos == 1 {
+                        format!(
                             "instructionHasher{name}.inputs[{}] <== {};\n",
                             i,
                             var.0,
                             name = self.name.to_upper_camel_case()
-                        ));
+                        )
                     } else {
-                        self.code.push_str(&format!(
+                        format!(
                             "instructionHasher{name}[appUtxoIndex].inputs[{}] <== {}[appUtxoIndex];\n",
-                            i,
-                            var.0,
-                            name = self.name.to_upper_camel_case()
-                        ));
-                    }
-                    // output.push_str(&format!(
-                    //     "instructionHasher[appUtxoIndex].inputs[{}] <== {}[appUtxoIndex];\n",
-                    //     i, var
-                    // ));
+                            i, var.0, name = self.name.to_upper_camel_case()
+                        )
+                    };
+                    self.code.push_str(&input_code);
                 }
             }
 
-            if self.no_utxos > 1 {
-                self.code.push_str(format!("for (var inUtxoIndex = 0; inUtxoIndex < nIns; inUtxoIndex++) {{
-                    checkInstructionHash[appUtxoIndex][inUtxoIndex] = ForceEqualIfEnabled();
-                    checkInstructionHash[appUtxoIndex][inUtxoIndex].in[0] <== inAppDataHash[inUtxoIndex];
-                    checkInstructionHash[appUtxoIndex][inUtxoIndex].in[1] <== instructionHasher{name}[appUtxoIndex].out;
-                    checkInstructionHash[appUtxoIndex][inUtxoIndex].enabled <== isAppInUtxo{name}[appUtxoIndex][inUtxoIndex];
-               }}\n",
-               name = self.name.to_upper_camel_case()
-           )
-           .as_str(),
-       );
-                self.code.push_str("}\n");
+            let force_equal_code = if self.no_utxos > 1 {
+                format!(
+                    "for (var inUtxoIndex = 0; inUtxoIndex < nIns; inUtxoIndex++) {{\n\
+                    \tcheckInstructionHash{name}[appUtxoIndex][inUtxoIndex] = ForceEqualIfEnabled();\n\
+                    \tcheckInstructionHash{name}[appUtxoIndex][inUtxoIndex].in[0] <== inAppDataHash[inUtxoIndex];\n\
+                    \tcheckInstructionHash{name}[appUtxoIndex][inUtxoIndex].in[1] <== instructionHasher{name}[appUtxoIndex].out;\n\
+                    \tcheckInstructionHash{name}[appUtxoIndex][inUtxoIndex].enabled <== is{}AppUtxo{name}[appUtxoIndex][inUtxoIndex];\n\
+                    }}\n}}\n",
+                    utxo_type_prefix.to_upper_camel_case(),
+                    name = self.name.to_upper_camel_case()
+                )
             } else {
-                self.code.push_str(
-                    format!(
-                        "for (var inUtxoIndex = 0; inUtxoIndex < nIns; inUtxoIndex++) {{
-                        checkInstructionHash[inUtxoIndex] = ForceEqualIfEnabled();
-                        checkInstructionHash[inUtxoIndex].in[0] <== inAppDataHash[inUtxoIndex];
-                        checkInstructionHash[inUtxoIndex].in[1] <== instructionHasher{name}.out;
-                        checkInstructionHash[inUtxoIndex].enabled <== isAppInUtxo{name}[inUtxoIndex];
+                format!(
+                    "for (var inUtxoIndex = 0; inUtxoIndex < nIns; inUtxoIndex++) {{\n\
+                    \tcheckInstructionHash{name}[inUtxoIndex] = ForceEqualIfEnabled();\n\
+                    \tcheckInstructionHash{name}[inUtxoIndex].in[0] <== inAppDataHash[inUtxoIndex];\n\
+                    \tcheckInstructionHash{name}[inUtxoIndex].in[1] <== instructionHasher{name}.out;\n\
+                    \tcheckInstructionHash{name}[inUtxoIndex].enabled <== is{}AppUtxo{name}[inUtxoIndex];\n\
                     }}\n",
-                        name = self.name.to_upper_camel_case()
-                    )
-                    .as_str(),
-                );
-            }
+                    utxo_type_prefix.to_upper_camel_case(),
+                    name = self.name.to_upper_camel_case()
+                )
+            };
+
+            self.code.push_str(&force_equal_code);
         }
 
         Ok(())
@@ -479,51 +516,79 @@ component checkInstructionHash{}[{}];\n",
 
 fn generate_equal_code(
     name: &String,
+    assigning_variable_name: &String,
     variable_name: &String,
     comparing_variable_name: &String,
     instruction_name: &String,
+    type_prefix: &str,
 ) -> String {
     format!(
         "check{variable_name}{name}[i] = ForceEqualIfEnabled();
-        check{variable_name}{name}[i].in[0] <== {variable_name};
+        check{variable_name}{name}[i].in[0] <== {assigning_variable_name};
         check{variable_name}{name}[i].in[1] <== {comparing_variable_name};
-        check{variable_name}{name}[i].enabled <== isAppUtxo{name}[i] * {instruction_name};
+        check{variable_name}{name}[i].enabled <== is{type_prefix}AppUtxo{name}[i] * {instruction_name};
         ",
         name = name,
         comparing_variable_name = comparing_variable_name,
         instruction_name = instruction_name,
+        variable_name = variable_name.to_upper_camel_case(),
+        type_prefix = String::from(type_prefix).to_upper_camel_case(),
     )
 }
 
-pub fn generate_check_in_utxo_code(
+pub fn generate_check_utxo_code(
     contents: &String,
-    instance: &Instance,
-) -> Result<(String, CheckUtxo), MacroCircomError> {
-    // starts with #[checkInUtxo(
-    let (extractedCheckInUtxos, header_string, remainingContents) =
-        parse_general_between_curly_brackets(contents, &String::from("#[checkInUtxo("), false)?;
-    let mut check_utxo = CheckUtxo::parse_header(&header_string)?;
-    check_utxo.from_input(&extractedCheckInUtxos)?;
-    // let (utxoData, _, _) = parse_general_between_curly_brackets(
-    //     &extractedCheckInUtxos.join("\n"),
-    //     &String::from("utxoData"),
-    //     false,
-    // )
-    // .unwrap();
-    // check_utxo.parse_utxo_data(utxoData);
-    // got all the info now generate the code
-    // generate the input signals
-    // generate the components
-    // generate the loop
-    // generate the components inside the loop
-    // close the loop
-    check_utxo.generate_signals();
-    check_utxo.generate_components()?;
-    check_utxo.generate_instruction_hash_code()?;
-    check_utxo.generate_comparison_check_code()?;
+    utxo_type: &String,
+    // instance: &Instance,
+) -> Result<(String, Vec<CheckUtxo>), MacroCircomError> {
+    let mut checkedUtxos = Vec::<CheckUtxo>::new();
+    let mut remaining_contents: String = contents.clone();
+    // let mut string_remaining_contents = String::new();
+    for i in 0..4 {
+        // starts with #[check{}Utxo( // In or Out
+        let (extractedCheckInUtxos, header_string, _remaining_contents, is_empty) =
+            parse_general_between_curly_brackets(
+                &remaining_contents,
+                &format!("#[check{}Utxo(", utxo_type),
+                false,
+                false,
+            )?;
+        println!("is empty: {}", is_empty);
 
-    Ok((remainingContents, check_utxo))
+        remaining_contents = _remaining_contents;
+        println!("i {}", i);
+        println!("remaining contents: {}", remaining_contents);
+        if is_empty {
+            return Ok((remaining_contents, checkedUtxos));
+        }
+
+        let mut check_utxo = CheckUtxo::parse_header(&header_string)?;
+        check_utxo.from_input(&extractedCheckInUtxos)?;
+        check_utxo.is_in_utxo = true;
+
+        // check_utxo.parse_utxo_data(utxoData);
+        // got all the info now generate the code
+        // generate the input signals
+        // generate the components
+        // generate the loop
+        // generate the components inside the loop
+        // close the loop
+        check_utxo.generate_signals();
+        check_utxo.generate_components()?;
+        check_utxo.generate_instruction_hash_code()?;
+        check_utxo.generate_comparison_check_code()?;
+        checkedUtxos.push(check_utxo);
+    }
+    Ok((remaining_contents, checkedUtxos))
 }
+
+// TODO:
+// - add full test
+// instruction hasher does not add name
+//
+// - test with circom
+// - put into main.rs
+// - test in voting
 
 /*
 let (instruction_hash_code, contents, utxo_data_variable_names) = parse_general(
@@ -539,14 +604,22 @@ pub fn parse_general_between_curly_brackets(
     input: &String,
     starting_string: &String,
     critical: bool,
-) -> Result<(Vec<String>, String, String), MacroCircomError> {
+    multiple: bool,
+) -> Result<(Vec<String>, String, String, bool), MacroCircomError> {
     let mut found_bracket = false;
     let mut remaining_lines = Vec::new();
-    let mut found_instance = false;
+    let mut found_instance: u8 = 0;
     let mut commented = false;
     let mut bracket_str = Vec::<String>::new();
     let mut header_string = String::new();
     for line in input.lines() {
+        if found_instance > 1 && !multiple {
+            remaining_lines.push(line);
+            found_bracket = false;
+            continue;
+        }
+        println!("found instance: {}", found_instance);
+        println!("line: {}", line);
         let line = line.trim();
         if line.starts_with("//") {
             continue;
@@ -563,21 +636,29 @@ pub fn parse_general_between_curly_brackets(
             }
             continue;
         }
-        if line.starts_with(starting_string) {
+        if found_instance == 0 && line.starts_with(starting_string) {
             // cannot accept overloads implementations
-            if found_instance == true {
-                panic!();
-            };
-            found_instance = true;
+            // if found_instance == true {
+            //     panic!();
+            // };
+            found_instance += 1;
             found_bracket = true;
             header_string = line.to_string();
+            if found_instance > 1 && !multiple {
+                bracket_str.push(line.to_string());
+                found_bracket = false;
+            }
             continue;
         }
-        if found_instance && line.starts_with("{") {
+        if found_instance > 0 && line.starts_with("{") {
             continue;
         }
-        if found_bracket && found_instance && line.starts_with("}") {
+        if found_bracket && found_instance > 0 && line.starts_with("}") || line.ends_with("}") {
             found_bracket = false;
+            remaining_lines.push(line);
+            // if multiple {
+            //     found_instance += 1;
+            // }
             continue;
         }
 
@@ -588,13 +669,29 @@ pub fn parse_general_between_curly_brackets(
             remaining_lines.push(line);
         }
     }
-    if !found_instance && critical {
+    if found_bracket {
+        println!("remaining lines {}", remaining_lines.join("\n"));
+        println!("bracket str {}", bracket_str.join("\n"));
+        println!("header string {}", header_string);
+        println!("input {}", input);
+        panic!();
         return Err(ParseInstanceError(input.to_string()));
     }
-    Ok((bracket_str, header_string, remaining_lines.join("\n")))
+    if found_instance == 0 && critical {
+        return Err(ParseInstanceError(input.to_string()));
+    }
+
+    Ok((
+        bracket_str,
+        header_string,
+        remaining_lines.join("\n"),
+        found_instance == 0,
+    ))
 }
 
 mod tests {
+    use crate::checkUtxo;
+
     use super::*;
 
     #[test]
@@ -643,9 +740,14 @@ mod tests {
            }",
         );
 
-        let (extractedCheckInUtxos, header_string, remainingContents) =
-            parse_general_between_curly_brackets(&contents, &String::from("#[checkInUtxo("), false)
-                .unwrap();
+        let (extractedCheckInUtxos, header_string, remainingContents, is_empty) =
+            parse_general_between_curly_brackets(
+                &contents,
+                &String::from("#[checkInUtxo("),
+                false,
+                false,
+            )
+            .unwrap();
         let mut check_utxo = CheckUtxo::parse_header(&header_string).unwrap();
         assert_eq!(check_utxo.name, "UtxoName");
         assert_eq!(check_utxo.no_utxos, 1);
@@ -723,16 +825,15 @@ mod tests {
 
         // Generating components
         check_utxo.generate_components()?;
-
+        println!("{}", check_utxo.code);
         // Constructing the expected code output
         let expected_output = String::from(
             "var utxoName = 1;\n\
-            component checkAmountSolUtxoName[utxoName][nIns];\n\
-            component checkAmountSplUtxoName[utxoName][nIns];\n\
-            component checkAssetSplUtxoName[utxoName][nIns];\n\
-            component checkAppDataHashUtxoName[utxoName][nIns];\n\
-            component checkUtxoDataAttribute1[utxoName][nIns];\n\
-            component checkUtxoDataAttribute2[utxoName][nIns];\n\
+            component checkInAmountSolUtxoName[utxoName][nIns];\n\
+            component checkInAmountSplUtxoName[utxoName][nIns];\n\
+            component checkInAssetSplUtxoName[utxoName][nIns];\n\
+            component checkInAppDataHashUtxoName[utxoName][nIns];\n\
+            component checkInUtxoDataAttribute2UtxoName[utxoName][nIns];\n\
             component instructionHasherUtxoName;\n\
             component checkInstructionHashUtxoName[nIns];\n",
         );
@@ -774,16 +875,245 @@ mod tests {
 instructionHasherUtxoName.inputs[0] <== attribute1;
 instructionHasherUtxoName.inputs[1] <== attribute2;
 for (var inUtxoIndex = 0; inUtxoIndex < nIns; inUtxoIndex++) {
-                        checkInstructionHash[inUtxoIndex] = ForceEqualIfEnabled();
-                        checkInstructionHash[inUtxoIndex].in[0] <== inAppDataHash[inUtxoIndex];
-                        checkInstructionHash[inUtxoIndex].in[1] <== instructionHasherUtxoName.out;
-                        checkInstructionHash[inUtxoIndex].enabled <== isAppInUtxoUtxoName[inUtxoIndex];
-                    }
+	checkInstructionHashUtxoName[inUtxoIndex] = ForceEqualIfEnabled();
+	checkInstructionHashUtxoName[inUtxoIndex].in[0] <== inAppDataHash[inUtxoIndex];
+	checkInstructionHashUtxoName[inUtxoIndex].in[1] <== instructionHasherUtxoName.out;
+	checkInstructionHashUtxoName[inUtxoIndex].enabled <== isInAppUtxoUtxoName[inUtxoIndex];
+}
 "#;
 
         // Asserting that the generated code matches the expected output
         assert_eq!(check_utxo.code, expected_output);
 
         Ok(())
+    }
+
+    #[test]
+    fn generate_comparison_check_code_test() -> Result<(), MacroCircomError> {
+        // Setting up a CheckUtxo instance with mock data
+        let mut check_utxo = CheckUtxo {
+            code: String::new(),
+            name: "UtxoName".to_string(),
+            is_in_utxo: true,
+            is_out_utxo: false,
+            instruction_name: Some("instruction".to_string()),
+            no_utxos: 1,
+            amount_sol: Some((Comparator::Equal, "sth".to_string())),
+            amount_spl: Some((Comparator::Equal, "sth1".to_string())),
+            asset_spl: Some((Comparator::Equal, "sth2".to_string())),
+            app_data_hash:Some((Comparator::Equal, "sth3".to_string())),
+            utxo_data:// None,     //
+                                  Some(vec![
+                                     ("attribute1".to_string(), None, None),
+                                     (
+                                         "attribute2".to_string(),
+                                         Some(Comparator::Equal),
+                                         Some("testComparison".to_string()),
+                                     ),
+                                 ]),
+        };
+
+        // Calling the generate_comparison_check_code method
+        check_utxo.generate_comparison_check_code()?;
+
+        // Constructing the expected code output
+        let expected_output = r#"for (var i = 0; i < nIns; i++) {
+checkInAmountSolUtxoName[i] = ForceEqualIfEnabled();
+        checkInAmountSolUtxoName[i].in[0] <== inAmountsHasher[i].inputs[0];
+        checkInAmountSolUtxoName[i].in[1] <== sth;
+        checkInAmountSolUtxoName[i].enabled <== isInAppUtxoUtxoName[i] * instruction;
+        checkInAppDataHashUtxoName[i] = ForceEqualIfEnabled();
+        checkInAppDataHashUtxoName[i].in[0] <== inAppDataHash[i].out;
+        checkInAppDataHashUtxoName[i].in[1] <== sth3;
+        checkInAppDataHashUtxoName[i].enabled <== isInAppUtxoUtxoName[i] * instruction;
+        checkInAmountSplUtxoName[i] = ForceEqualIfEnabled();
+        checkInAmountSplUtxoName[i].in[0] <== inAmountsHasher[i].inputs[1];
+        checkInAmountSplUtxoName[i].in[1] <== sth1;
+        checkInAmountSplUtxoName[i].enabled <== isInAppUtxoUtxoName[i] * instruction;
+        checkInAssetSplUtxoName[i] = ForceEqualIfEnabled();
+        checkInAssetSplUtxoName[i].in[0] <== inCommitmentHasher[i].inputs[4];
+        checkInAssetSplUtxoName[i].in[1] <== sth2;
+        checkInAssetSplUtxoName[i].enabled <== isInAppUtxoUtxoName[i] * instruction;
+        checkInUtxoDataAttribute2UtxoName[i] = ForceEqualIfEnabled();
+        checkInUtxoDataAttribute2UtxoName[i].in[0] <== attribute2;
+        checkInUtxoDataAttribute2UtxoName[i].in[1] <== testComparison;
+        checkInUtxoDataAttribute2UtxoName[i].enabled <== isInAppUtxoUtxoName[i] * instruction;
+        }
+"#;
+        println!("code {}", check_utxo.code);
+        // Asserting that the generated code matches the expected output
+        assert_eq!(check_utxo.code, expected_output);
+
+        Ok(())
+    }
+
+    #[test]
+    fn complete_test() {
+        let contents = String::from(
+            "#[checkInUtxo(utxoName, 1, instruction)]
+        // to append to otherwise duplicate identifiers
+       {
+            amountSol == sth, // enable comparisons ==, <=, <, =>, >
+            amountSpl == sth1,
+            assetSpl == sth2,
+            // blinding == sth,
+            appDataHash == sth3,
+            // poolType: sth, // always 0
+            // verifierPubkey: // has to be this verifier
+            utxoData: {
+               attribute1,
+               attribute2 == testComparison,
+               }
+           }",
+        );
+        let (remainingContent, checkedUtxos) =
+            generate_check_utxo_code(&contents, &String::from("In")).unwrap();
+        let checkUtxo = checkedUtxos[0].clone();
+        println!("code {}", checkUtxo.code);
+        assert_eq!(remainingContent, "}\n}");
+        assert_eq!(checkUtxo.name, "UtxoName");
+        assert_eq!(checkUtxo.no_utxos, 1);
+        assert_eq!(
+            checkUtxo.instruction_name,
+            Some(String::from("instruction"))
+        );
+        assert_eq!(
+            checkUtxo.amount_sol,
+            Some((Comparator::Equal, String::from("sth")))
+        );
+        assert_eq!(
+            checkUtxo.amount_spl,
+            Some((Comparator::Equal, String::from("sth1")))
+        );
+        assert_eq!(
+            checkUtxo.asset_spl,
+            Some((Comparator::Equal, String::from("sth2")))
+        );
+        assert_eq!(
+            checkUtxo.app_data_hash,
+            Some((Comparator::Equal, String::from("sth3")))
+        );
+        assert_eq!(
+            checkUtxo.utxo_data,
+            Some(vec![
+                ("attribute1".to_string(), None, None),
+                (
+                    "attribute2".to_string(),
+                    Some(Comparator::Equal),
+                    Some("testComparison".to_string()),
+                ),
+            ])
+        );
+    }
+
+    #[test]
+    fn complete_test_2() {
+        let contents = String::from(
+            "#[checkInUtxo(utxoName, 1, instruction)]
+        // to append to otherwise duplicate identifiers
+        {
+            amountSol == sth, // enable comparisons ==, <=, <, =>, >
+            amountSpl == sth1,
+            assetSpl == sth2,
+            // blinding == sth,
+            appDataHash == sth3,
+            // poolType: sth, // always 0
+            // verifierPubkey: // has to be this verifier
+            utxoData: {
+                attribute1,
+                attribute2 == testComparison,
+                }
+            }
+           #[checkInUtxo(utxoName1, 1, instruction1)]
+        // to append to otherwise duplicate identifiers
+       {
+            amountSol == sth2, // enable comparisons ==, <=, <, =>, >
+            amountSpl == sth12,
+            assetSpl == sth22,
+            // blinding == sth2,
+            appDataHash == sth32,
+            // poolType: sth, // always 0
+            // verifierPubkey: // has to be this verifier
+            utxoData: {
+               attribute11,
+               attribute21 == testComparison1,
+               }
+           }",
+        );
+        let (remainingContent, checkedUtxos) =
+            generate_check_utxo_code(&contents, &String::from("In")).unwrap();
+        let checkUtxo = checkedUtxos[0].clone();
+        assert_eq!(checkedUtxos.len(), 2);
+        println!("code {}", checkUtxo.code);
+        assert_eq!(remainingContent, "}\n}\n}\n}");
+        assert_eq!(checkUtxo.name, "UtxoName");
+        assert_eq!(checkUtxo.no_utxos, 1);
+        assert_eq!(
+            checkUtxo.instruction_name,
+            Some(String::from("instruction"))
+        );
+        assert_eq!(
+            checkUtxo.amount_sol,
+            Some((Comparator::Equal, String::from("sth")))
+        );
+        assert_eq!(
+            checkUtxo.amount_spl,
+            Some((Comparator::Equal, String::from("sth1")))
+        );
+        assert_eq!(
+            checkUtxo.asset_spl,
+            Some((Comparator::Equal, String::from("sth2")))
+        );
+        assert_eq!(
+            checkUtxo.app_data_hash,
+            Some((Comparator::Equal, String::from("sth3")))
+        );
+        assert_eq!(
+            checkUtxo.utxo_data,
+            Some(vec![
+                ("attribute1".to_string(), None, None),
+                (
+                    "attribute2".to_string(),
+                    Some(Comparator::Equal),
+                    Some("testComparison".to_string()),
+                ),
+            ])
+        );
+        // println!("code {}", checkedUtxos[1].code);
+
+        let checkUtxo1 = checkedUtxos[1].clone();
+        assert_eq!(checkUtxo1.name, "UtxoName1");
+        assert_eq!(checkUtxo1.no_utxos, 1);
+        assert_eq!(
+            checkUtxo1.instruction_name,
+            Some(String::from("instruction1"))
+        );
+        assert_eq!(
+            checkUtxo1.amount_sol,
+            Some((Comparator::Equal, String::from("sth2")))
+        );
+        assert_eq!(
+            checkUtxo1.amount_spl,
+            Some((Comparator::Equal, String::from("sth12")))
+        );
+        assert_eq!(
+            checkUtxo1.asset_spl,
+            Some((Comparator::Equal, String::from("sth22")))
+        );
+        assert_eq!(
+            checkUtxo1.app_data_hash,
+            Some((Comparator::Equal, String::from("sth32")))
+        );
+        assert_eq!(
+            checkUtxo1.utxo_data,
+            Some(vec![
+                ("attribute11".to_string(), None, None),
+                (
+                    "attribute21".to_string(),
+                    Some(Comparator::Equal),
+                    Some("testComparison1".to_string()),
+                ),
+            ])
+        );
     }
 }

@@ -21,6 +21,6 @@ pub enum MacroCircomError {
     PropertyDefinedMultipleTimes,
     #[error("InvalidProperty")]
     InvalidProperty,
-    #[error("InvalidComparator")]
-    InvalidComparator,
+    #[error("InvalidComparator: {0}")]
+    InvalidComparator(String),
 }

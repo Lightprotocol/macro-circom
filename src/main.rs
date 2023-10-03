@@ -2,8 +2,11 @@ pub mod auto_generated_accounts_template;
 pub mod checkUtxo;
 pub mod connecting_hash_circom;
 pub mod errors;
-use crate::auto_generated_accounts_template::AUTO_GENERATED_ACCOUNTS_TEMPLATE;
+use crate::checkUtxo::generate_check_utxo_code;
 use crate::errors::MacroCircomError;
+use crate::{
+    auto_generated_accounts_template::AUTO_GENERATED_ACCOUNTS_TEMPLATE, checkUtxo::CheckUtxo,
+};
 use anyhow::{anyhow, Error as AnyhowError};
 use core::panic;
 use errors::MacroCircomError::*;
@@ -25,7 +28,6 @@ pub struct Instance {
     file_name: String,
     template_name: Option<String>,
     config: Vec<u32>,
-    nr_app_utxos: Option<u32>,
     public_inputs: Vec<String>,
 }
 
@@ -91,64 +93,63 @@ fn main() -> Result<(), AnyhowError> {
         .expect("Unable to read the file");
 
     let (mut instance, contents) = parse_instance(&contents)?;
-    if instance.nr_app_utxos.is_none() {
-        return Err(anyhow!(InvalidNumberAppUtxos));
-    }
 
-    // let (instruction_hash_code, contents, utxo_data_variable_names) = parse_general(
-    //     &contents,
-    //     &String::from("#[utxoData]"),
-    //     generate_instruction_hash_code,
-    //     true,
-    //     &instance,
-    // )?;
+    let (contents, checkedInUtxos) = generate_check_utxo_code(&contents, &String::from("In"))?;
+    let check_utxos_code = checkedInUtxos[0].code.clone();
+    let utxo_data_variable_names = checkedInUtxos[0]
+        .clone()
+        .utxo_data
+        .unwrap_or(vec![])
+        .iter()
+        .map(|u| u.0.clone())
+        .collect::<Vec<String>>();
 
-    // let (_verifier_name, contents) =
-    //     parse_light_transaction(&contents, &instruction_hash_code, &mut instance).unwrap();
+    let (_verifier_name, contents) =
+        parse_light_transaction(&contents, &check_utxos_code, &mut instance).unwrap();
 
-    // let mut output_file =
-    //     fs::File::create(path_to_parent_dir.clone() + "/" + &file_name + ".circom").unwrap();
+    let mut output_file =
+        fs::File::create(path_to_parent_dir.clone() + "/" + &file_name + ".circom").unwrap();
 
-    // write!(&mut output_file, "{}\n{}", DISCLAIMER_STRING, contents).unwrap();
+    write!(&mut output_file, "{}\n{}", DISCLAIMER_STRING, contents).unwrap();
 
-    // let mut output_file = fs::File::create(
-    //     [
-    //         &path_to_parent_dir.to_string(),
-    //         "/",
-    //         instance.file_name.as_str().clone(),
-    //         &".circom",
-    //     ]
-    //     .concat(),
-    // )
-    // .unwrap();
-    // let instance_str = generate_circom_main_string(&instance, &file_name);
-    // println!(
-    //     "sucessfully created main {}.circom and {}.circom",
-    //     instance.file_name, file_name
-    // );
+    let mut output_file = fs::File::create(
+        [
+            &path_to_parent_dir.to_string(),
+            "/",
+            instance.file_name.as_str().clone(),
+            &".circom",
+        ]
+        .concat(),
+    )
+    .unwrap();
+    let instance_str = generate_circom_main_string(&instance, &file_name);
+    println!(
+        "sucessfully created main {}.circom and {}.circom",
+        instance.file_name, file_name
+    );
 
-    // write!(&mut output_file, "{}\n{}", DISCLAIMER_STRING, instance_str).unwrap();
-    // // output_file.write_all(&rustfmt(instance_str)?)?;
-    // let utxo_rust_idl_string = create_rust_idl(UTXO_STRUCT_BASE, &utxo_data_variable_names, "u256");
-    // let public_inputs_rust_idl_string = create_rust_idl(
-    //     PUBLIC_INPUTS_INSTRUCTION_DATA_BASE,
-    //     &instance.public_inputs[..instance.public_inputs.len() - 2].to_vec(),
-    //     "[u8; 32]",
-    // );
-    // let utxo_app_data_rust_idl_string =
-    //     create_rust_idl(UTXO_APP_DATA_STRUCT_BASE, &utxo_data_variable_names, "u256");
+    write!(&mut output_file, "{}\n{}", DISCLAIMER_STRING, instance_str).unwrap();
+    // output_file.write_all(&rustfmt(instance_str)?)?;
+    let utxo_rust_idl_string = create_rust_idl(UTXO_STRUCT_BASE, &utxo_data_variable_names, "u256");
+    let public_inputs_rust_idl_string = create_rust_idl(
+        PUBLIC_INPUTS_INSTRUCTION_DATA_BASE,
+        &instance.public_inputs[..instance.public_inputs.len() - 2].to_vec(),
+        "[u8; 32]",
+    );
+    let utxo_app_data_rust_idl_string =
+        create_rust_idl(UTXO_APP_DATA_STRUCT_BASE, &utxo_data_variable_names, "u256");
 
-    // let light_utils_str = create_light_utils_str(
-    //     utxo_rust_idl_string,
-    //     public_inputs_rust_idl_string,
-    //     utxo_app_data_rust_idl_string,
-    //     instance,
-    // );
-    // let mut output_file_idl = fs::File::create(
-    //     "./programs/".to_owned() + &program_name + "/src/auto_generated_accounts.rs",
-    // )
-    // .unwrap();
-    // write!(&mut output_file_idl, "{}", light_utils_str).unwrap();
+    let light_utils_str = create_light_utils_str(
+        utxo_rust_idl_string,
+        public_inputs_rust_idl_string,
+        utxo_app_data_rust_idl_string,
+        instance,
+    );
+    let mut output_file_idl = fs::File::create(
+        "./programs/".to_owned() + &program_name + "/src/auto_generated_accounts.rs",
+    )
+    .unwrap();
+    write!(&mut output_file_idl, "{}", light_utils_str).unwrap();
     Ok(())
 }
 
@@ -339,7 +340,6 @@ fn parse_instance(input: &String) -> Result<(Instance, String), MacroCircomError
         Instance {
             file_name,
             config,
-            nr_app_utxos,
             public_inputs,
             template_name: None,
         },
@@ -355,7 +355,6 @@ fn parse_public_input(input: &str) -> Vec<String> {
 fn generate_circom_main_string(instance: &Instance, file_name: &str) -> String {
     let name = instance.template_name.as_ref().unwrap();
     let config = &instance.config;
-    let nr_app_utxos = instance.nr_app_utxos.unwrap_or(0);
     let public_inputs = instance.public_inputs.to_vec();
 
     let inputs_str = public_inputs.join(", ");
@@ -367,8 +366,8 @@ fn generate_circom_main_string(instance: &Instance, file_name: &str) -> String {
     format!(
         "pragma circom 2.1.4;\n\
 include \"./{}.circom\";\n\
-component main {{public [{}]}} =  {}({}{} {}, 18, 4, 4, 184598798020101492503359154328231866914977581098629757339001774613643340069, 0, 1, 3, 2, 2);",
-         file_name, inputs_str, name, config_str, if config_str.is_empty() { "" } else { "," }, nr_app_utxos
+component main {{public [{}]}} =  {}({}{} 18, 4, 4, 184598798020101492503359154328231866914977581098629757339001774613643340069, 0, 1, 3, 2, 2);",
+         file_name, inputs_str, name, config_str, if config_str.is_empty() { "" } else { "," }
     )
 }
 
@@ -457,7 +456,6 @@ mod tests {
             file_name: "appTransactionMain".to_owned(),
             template_name: None,
             config: vec![7, 1, 9, 2],
-            nr_app_utxos: Some(1),
             public_inputs: vec![
                 String::from("transactionHash"),
                 String::from("publicAppVerifier"),
@@ -490,7 +488,6 @@ mod tests {
             file_name: "appTransactionMain".to_owned(),
             config: vec![7, 1, 9, 2],
             template_name: None,
-            nr_app_utxos: Some(1),
             public_inputs: vec![
                 String::from("inputA"),
                 String::from("inputB"),
@@ -510,7 +507,6 @@ mod tests {
             file_name: "appTransaction".to_owned(),
             template_name: Some(String::from("AppTransaction")),
             config: vec![7, 1],
-            nr_app_utxos: Some(1),
             public_inputs: vec![
                 String::from("transactionHash"),
                 String::from("publicAppVerifier"),
@@ -519,7 +515,7 @@ mod tests {
 
         let expected_string = "pragma circom 2.1.4;\n\
             include \"./circuit.circom\";\n\
-            component main {public [transactionHash, publicAppVerifier]} =  AppTransaction(7, 1, 1, 18, 4, 4, 184598798020101492503359154328231866914977581098629757339001774613643340069, 0, 1, 3, 2, 2);";
+            component main {public [transactionHash, publicAppVerifier]} =  AppTransaction(7, 1, 18, 4, 4, 184598798020101492503359154328231866914977581098629757339001774613643340069, 0, 1, 3, 2, 2);";
 
         assert_eq!(
             generate_circom_main_string(&instance, "circuit"),
@@ -533,7 +529,6 @@ mod tests {
             file_name: "appTransaction".to_owned(),
             template_name: Some(String::from("AppTransaction")),
             config: vec![7, 1, 3, 2],
-            nr_app_utxos: Some(1),
             public_inputs: vec![
                 String::from("transactionHash"),
                 String::from("publicAppVerifier"),
@@ -542,7 +537,7 @@ mod tests {
 
         let expected_string = "pragma circom 2.1.4;\n\
             include \"./circuit.circom\";\n\
-            component main {public [transactionHash, publicAppVerifier]} =  AppTransaction(7, 1, 3, 2, 1, 18, 4, 4, 184598798020101492503359154328231866914977581098629757339001774613643340069, 0, 1, 3, 2, 2);";
+            component main {public [transactionHash, publicAppVerifier]} =  AppTransaction(7, 1, 3, 2, 18, 4, 4, 184598798020101492503359154328231866914977581098629757339001774613643340069, 0, 1, 3, 2, 2);";
 
         assert_eq!(
             generate_circom_main_string(&instance, "circuit"),
@@ -557,7 +552,6 @@ mod tests {
             file_name: "appTransaction".to_owned(),
             template_name: Some(String::from("AppTransaction")),
             config: vec![7, 1],
-            nr_app_utxos: Some(1),
             public_inputs: vec![
                 String::from("transactionHash"),
                 String::from("publicAppVerifier"),
@@ -626,7 +620,6 @@ mod tests {
             file_name: String::from("file_name"),
             template_name: None,
             config: vec![],
-            nr_app_utxos: None,
             public_inputs: vec![],
         };
 
@@ -645,7 +638,6 @@ mod tests {
             file_name: String::from("file_name"),
             template_name: None,
             config: vec![],
-            nr_app_utxos: None,
             public_inputs: vec![],
         };
 
