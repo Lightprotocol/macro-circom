@@ -1,0 +1,95 @@
+grammar;
+
+use super::Instance;
+
+// Main rule for parsing the Instance struct
+pub Instance: Instance = {
+    "#[instance]" "{" <def:InstanceFields> "}" => def
+};
+
+InstanceFields: Instance = {
+    <file_name:FileNameProperty> ","
+    <config:ConfigProperty> ","
+    <public_inputs:PublicInputsProperty> "," => 
+        Instance {
+            file_name: file_name,
+            config: config,
+            public_inputs: public_inputs,
+            template_name: None,
+        }
+};
+
+// ... Continue with other rules if needed
+
+SeparatedCommaNumber: Vec<u32> = {
+    <head: Number> <tail:("," Number)*> => {
+        let mut vec = vec![head];
+        vec.extend(tail.into_iter().map(|(_, item)| item));
+        vec
+    }
+};
+
+SeparatedCommaString: Vec<String> = {
+    <head: STRING> <tail:("," STRING)*> => {
+        let mut vec = vec![head.to_string()];
+        vec.extend(tail.into_iter().map(|(_, item)| item.to_string()));
+        vec
+    }
+};
+
+FileNameProperty: String = 
+    <kv:KeyValuePair> => {
+        if kv.0 == "fileName" {
+            kv.1.to_string()
+        } else {
+            panic!("Expected 'fileName', got {}", kv.0)
+        }
+    };
+
+ConfigProperty: Vec<u32> =
+    <key:STRING> ":" "(" <numbers:SeparatedCommaNumber> ")" => {
+        if key == "config" {
+            numbers
+        } else {
+            panic!("Expected 'config', got {}", key)
+        }
+    };
+
+
+
+PublicInputsProperty: Vec<String> = <key:STRING> ":" "[" <inputs:SeparatedCommaString> "]" => {
+    if key == "publicInputs" {
+        let mut default_inputs = vec![
+            String::from("transactionHash"),
+            String::from("publicAppVerifier"),
+        ];
+        let mut combined = inputs;
+        combined.append(&mut default_inputs);
+        combined
+    }else {
+        panic!("Expected 'publicInputs', got {}", key)
+}};
+KeyValuePair: (String, String) = 
+    <key:STRING> ":" <value:ValueString> => (key.to_string(), value.to_string());
+
+ValueString: String = <s:STRING> => s.to_string();
+
+Number: u32 = <n: NUMBER> => n.parse().unwrap();
+
+match {
+    r"\s*" => { }, // whitespace
+    r"//[^\n\r]*[\n\r]*" => { }, // single line comments
+    r"/\*([^\*]*\*+[^\*/])*([^\*]*\*+|[^\*])*\*/" => { }, // multi-line comments
+    r"#\[instance\]" => "#[instance]",
+    r"#\[" => "#[",
+    r"\[" => "[",
+    r"\]" => "]",
+    r"\{" => "{",
+    r"\}" => "}",
+    r"\(" => "(",
+    r"\)" => ")",
+    r":" => ":",
+    r"," => ",",
+    r"[0-9]+" => NUMBER,
+    r"-?[a-zA-Z_]+" => STRING,
+}

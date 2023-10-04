@@ -10,3 +10,7 @@ anyhow = "1.0.71"
 heck = "0.4.1"
 regex = "1.7.3"
 thiserror = "1.0.40"
+lalrpop-util = {version="0.20.0" , features = ["lexer"]}
+
+[build-dependencies]
+lalrpop = "0.20"

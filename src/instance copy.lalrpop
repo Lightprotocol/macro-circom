@@ -1,0 +1,53 @@
+grammar;
+
+use super::Instance;
+
+// Main rule for parsing the Instance struct
+pub Instance: Instance = {
+    "#[instance]" "{" <def:InstanceFields> "}" => def
+};
+
+InstanceFields: Instance = {
+    "fileName" ":" <filename:STRING> "," 
+    "config" "(" <numbers:SeparatedCommaNumber> ")" ","
+    "nrAppUtoxs:" <nr_app_utxos:Number> "," 
+    "publicInputs:" "[" <inputs:SeparatedCommaString> "]" "," => 
+        Instance {
+            file_name: format!("{}Main", filename),
+            config: numbers,
+            public_inputs: {
+                let mut default_inputs = vec![
+                    String::from("transactionHash"),
+                    String::from("publicAppVerifier"),
+                ];
+                let mut combined = inputs;
+                combined.append(&mut default_inputs);
+                combined
+            },
+            template_name: None,
+        }
+};
+
+// ... Continue with other rules if needed
+
+STRING : String = {
+    <s:r#""[^"]*""#> => String::from(&s[1..s.len()-1])
+};
+
+Number: u32 = <n:r"[0-9]+"> => n.parse().unwrap();
+
+SeparatedCommaNumber: Vec<u32> = {
+    <head: Number> <tail:("," Number)*> => {
+        let mut vec = vec![head];
+        vec.extend(tail.into_iter().map(|(_, item)| item));
+        vec
+    }
+};
+
+SeparatedCommaString: Vec<String> = {
+    <head: STRING> <tail:("," STRING)*> => {
+        let mut vec = vec![head];
+        vec.extend(tail.into_iter().map(|(_, item)| item));
+        vec
+    }
+};
