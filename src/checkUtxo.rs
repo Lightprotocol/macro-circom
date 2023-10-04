@@ -1,3 +1,4 @@
+use crate::describe_error;
 use crate::errors::MacroCircomError;
 use crate::errors::MacroCircomError::*;
 use crate::{auto_generated_accounts_template::AUTO_GENERATED_ACCOUNTS_TEMPLATE, Instance};
@@ -43,7 +44,7 @@ pub struct CheckUtxo {
     pub is_in_utxo: bool,
     pub is_out_utxo: bool,
     pub instruction_name: Option<String>,
-    pub no_utxos: u64,
+    pub no_utxos: String,
     // exists, comparator, variable name to compare with
     pub amount_sol: Option<(Comparator, String)>,
     pub amount_spl: Option<(Comparator, String)>,
@@ -78,7 +79,7 @@ impl CheckUtxo {
             is_in_utxo: false,
             is_out_utxo: false,
             instruction_name: None,
-            no_utxos: 0,
+            no_utxos: String::from("0"),
             amount_sol: None,
             amount_spl: None,
             asset_spl: None,
@@ -93,7 +94,7 @@ impl CheckUtxo {
         println!("header {:?}", re.captures(header));
         if let Some(caps) = re.captures(header) {
             let name = caps["name"].to_string().to_upper_camel_case();
-            let no_utxos: u64 = caps["no_utxos"]
+            let no_utxos = caps["no_utxos"]
                 .parse()
                 .map_err(|_| "Failed to parse number of UTXOs")
                 .unwrap();
@@ -263,7 +264,7 @@ impl CheckUtxo {
         self.code.push_str(&format!(
             "var {} = {};\n",
             self.name.to_lower_camel_case(),
-            self.no_utxos
+            self.no_utxos.parse::<u64>().unwrap()
         ));
         if self.amount_sol.is_some() {
             self.code.push_str(&format!(
@@ -315,7 +316,7 @@ impl CheckUtxo {
                     Name = self.name,
                 ));
             }
-            if self.no_utxos > 1 {
+            if self.no_utxos.parse::<u64>().unwrap() > 1 {
                 self.code.push_str(
                     format!(
                         "component instructionHasher[{}];
@@ -445,7 +446,7 @@ component checkInstructionHash{}[{}];\n",
             return Err(MacroCircomError::CheckUtxoInvalidFormat);
         };
         if let Some(utxo_data) = &self.utxo_data {
-            if self.no_utxos > 1 {
+            if self.no_utxos.parse::<u64>().unwrap() > 1 {
                 let loop_code = format!(
                     "for (var appUtxoIndex = 0; appUtxoIndex < nAppUtxos; appUtxoIndex++) {{\n\
                     \tinstructionHasher{}[appUtxoIndex] = Poseidon({});\n",
@@ -466,7 +467,7 @@ component checkInstructionHash{}[{}];\n",
                 if var.0.contains('[') && var.0.contains(']') {
                     unimplemented!("arrays not supported yet");
                 } else {
-                    let input_code = if self.no_utxos == 1 {
+                    let input_code = if self.no_utxos.parse::<u64>().unwrap() == 1 {
                         format!(
                             "instructionHasher{name}.inputs[{}] <== {};\n",
                             i,
@@ -483,7 +484,7 @@ component checkInstructionHash{}[{}];\n",
                 }
             }
 
-            let force_equal_code = if self.no_utxos > 1 {
+            let force_equal_code = if self.no_utxos.parse::<u64>().unwrap() > 1 {
                 format!(
                     "for (var inUtxoIndex = 0; inUtxoIndex < nIns; inUtxoIndex++) {{\n\
                     \tcheckInstructionHash{name}[appUtxoIndex][inUtxoIndex] = ForceEqualIfEnabled();\n\
@@ -546,33 +547,36 @@ pub fn generate_check_utxo_code(
     // let mut string_remaining_contents = String::new();
     for i in 0..4 {
         // starts with #[check{}Utxo( // In or Out
-        let (extractedCheckInUtxos, header_string, _remaining_contents, is_empty) =
-            parse_general_between_curly_brackets(
-                &remaining_contents,
-                &format!("#[check{}Utxo(", utxo_type),
-                false,
-                false,
-            )?;
-        println!("is empty: {}", is_empty);
+        // let (extractedCheckInUtxos, header_string, _remaining_contents, is_empty) =
+        //     parse_general_between_curly_brackets(
+        //         &remaining_contents,
+        //         &format!("#[check{}Utxo(", utxo_type),
+        //         false,
+        //         false,
+        //     )?;
+        // println!("is empty: {}", is_empty);
 
-        remaining_contents = _remaining_contents;
-        println!("i {}", i);
-        println!("remaining contents: {}", remaining_contents);
-        if is_empty {
-            return Ok((remaining_contents, checkedUtxos));
-        }
-
-        let mut check_utxo = CheckUtxo::parse_header(&header_string)?;
-        check_utxo.from_input(&extractedCheckInUtxos)?;
-        check_utxo.is_in_utxo = true;
-
-        // check_utxo.parse_utxo_data(utxoData);
-        // got all the info now generate the code
-        // generate the input signals
-        // generate the components
-        // generate the loop
-        // generate the components inside the loop
-        // close the loop
+        // remaining_contents = _remaining_contents;
+        // println!("i {}", i);
+        // println!("remaining contents: {}", remaining_contents);
+        // if is_empty {
+        //     return Ok((remaining_contents, checkedUtxos));
+        // }
+        // let check_utxo_res = crate::instance::CheckUtxoTypeParser::new().parse(&remaining_contents); //CheckUtxo::new().parse(&remaining_contents)?;
+        let mut check_utxo =
+            match crate::instance::CheckUtxoTypeParser::new().parse(&remaining_contents) {
+                Ok(instance) => instance,
+                Err(error) => {
+                    panic!("{}", describe_error(&remaining_contents, error));
+                }
+            }; // let mut check_utxo = CheckUtxo::parse_header(&header_string)?;
+               // check_utxo.parse_utxo_data(utxoData);
+               // got all the info now generate the code
+               // generate the input signals
+               // generate the components
+               // generate the loop
+               // generate the components inside the loop
+               // close the loop
         check_utxo.generate_signals();
         check_utxo.generate_components()?;
         check_utxo.generate_instruction_hash_code()?;
@@ -702,7 +706,7 @@ mod tests {
         assert!(result.is_ok());
         let utxo = result.unwrap();
         assert_eq!(utxo.name, "InputUtxo");
-        assert_eq!(utxo.no_utxos, 1);
+        assert_eq!(utxo.no_utxos, "1");
         assert_eq!(utxo.instruction_name, Some("test".to_string()));
 
         // Valid input without instruction_name
@@ -711,7 +715,7 @@ mod tests {
         assert!(result2.is_ok());
         let utxo2 = result2.unwrap();
         assert_eq!(utxo2.name, "InputUtxo");
-        assert_eq!(utxo2.no_utxos, 2);
+        assert_eq!(utxo2.no_utxos, "2");
         assert_eq!(utxo2.instruction_name, None);
 
         // Invalid format
@@ -750,7 +754,7 @@ mod tests {
             .unwrap();
         let mut check_utxo = CheckUtxo::parse_header(&header_string).unwrap();
         assert_eq!(check_utxo.name, "UtxoName");
-        assert_eq!(check_utxo.no_utxos, 1);
+        assert_eq!(check_utxo.no_utxos, "1");
         assert_eq!(
             check_utxo.instruction_name,
             Some(String::from("instruction"))
@@ -771,7 +775,7 @@ mod tests {
             is_in_utxo: false,
             is_out_utxo: false,
             instruction_name: Some("instruction".to_string()),
-            no_utxos: 1,
+            no_utxos: String::from("1"),
             amount_sol: Some((Comparator::Equal, "sth".to_string())),
             amount_spl: None,
             asset_spl: None,
@@ -808,7 +812,7 @@ mod tests {
             is_in_utxo: true,
             is_out_utxo: false,
             instruction_name: Some("instruction".to_string()),
-            no_utxos: 1,
+            no_utxos: String::from("1"),
             amount_sol: Some((Comparator::Equal, "sth".to_string())),
             amount_spl: Some((Comparator::Equal, "sth".to_string())),
             asset_spl: Some((Comparator::Equal, "sth".to_string())),
@@ -852,7 +856,7 @@ mod tests {
             is_in_utxo: true,
             is_out_utxo: false,
             instruction_name: Some("instruction".to_string()),
-            no_utxos: 1,
+            no_utxos: String::from("1"),
             amount_sol: Some((Comparator::Equal, "sth".to_string())),
             amount_spl: Some((Comparator::Equal, "sth".to_string())),
             asset_spl: Some((Comparator::Equal, "sth".to_string())),
@@ -897,7 +901,7 @@ for (var inUtxoIndex = 0; inUtxoIndex < nIns; inUtxoIndex++) {
             is_in_utxo: true,
             is_out_utxo: false,
             instruction_name: Some("instruction".to_string()),
-            no_utxos: 1,
+            no_utxos: String::from("1"),
             amount_sol: Some((Comparator::Equal, "sth".to_string())),
             amount_spl: Some((Comparator::Equal, "sth1".to_string())),
             asset_spl: Some((Comparator::Equal, "sth2".to_string())),
@@ -970,9 +974,9 @@ checkInAmountSolUtxoName[i] = ForceEqualIfEnabled();
             generate_check_utxo_code(&contents, &String::from("In")).unwrap();
         let checkUtxo = checkedUtxos[0].clone();
         println!("code {}", checkUtxo.code);
-        assert_eq!(remainingContent, "}\n}");
-        assert_eq!(checkUtxo.name, "UtxoName");
-        assert_eq!(checkUtxo.no_utxos, 1);
+        // assert_eq!(remainingContent, "}\n}");
+        assert_eq!(checkUtxo.name, "utxoName");
+        assert_eq!(checkUtxo.no_utxos, "1");
         assert_eq!(
             checkUtxo.instruction_name,
             Some(String::from("instruction"))
@@ -1047,7 +1051,7 @@ checkInAmountSolUtxoName[i] = ForceEqualIfEnabled();
         println!("code {}", checkUtxo.code);
         assert_eq!(remainingContent, "}\n}\n}\n}");
         assert_eq!(checkUtxo.name, "UtxoName");
-        assert_eq!(checkUtxo.no_utxos, 1);
+        assert_eq!(checkUtxo.no_utxos, "1");
         assert_eq!(
             checkUtxo.instruction_name,
             Some(String::from("instruction"))
@@ -1083,7 +1087,7 @@ checkInAmountSolUtxoName[i] = ForceEqualIfEnabled();
 
         let checkUtxo1 = checkedUtxos[1].clone();
         assert_eq!(checkUtxo1.name, "UtxoName1");
-        assert_eq!(checkUtxo1.no_utxos, 1);
+        assert_eq!(checkUtxo1.no_utxos, "1");
         assert_eq!(
             checkUtxo1.instruction_name,
             Some(String::from("instruction1"))

@@ -1,5 +1,6 @@
 pub mod auto_generated_accounts_template;
 pub mod checkUtxo;
+pub use checkUtxo::*;
 pub mod connecting_hash_circom;
 pub mod errors;
 use crate::checkUtxo::generate_check_utxo_code;
@@ -38,7 +39,7 @@ pub fn describe_error(
             token: (start, token, end),
             expected,
         } => {
-            let context_start = start.saturating_sub(30);
+            let context_start = start.saturating_sub(50);
             let context_end = std::cmp::min(end + 10, input.len());
             format!(
                 "Unrecognized token `{}` at position {}:{} within context `{}`. Expected one of: {:?}",

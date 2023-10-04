@@ -8,46 +8,86 @@ pub Instance: Instance = {
 };
 
 InstanceFields: Instance = {
-    "fileName" ":" <filename:STRING> "," 
-    "config" "(" <numbers:SeparatedCommaNumber> ")" ","
-    "nrAppUtoxs:" <nr_app_utxos:Number> "," 
-    "publicInputs:" "[" <inputs:SeparatedCommaString> "]" "," => 
+    <file_name:FileNameProperty> ","
+    <config:ConfigProperty>
+    <public_inputs:PublicInputsProperty> => 
         Instance {
-            file_name: format!("{}Main", filename),
-            config: numbers,
-            public_inputs: {
-                let mut default_inputs = vec![
-                    String::from("transactionHash"),
-                    String::from("publicAppVerifier"),
-                ];
-                let mut combined = inputs;
-                combined.append(&mut default_inputs);
-                combined
-            },
+            file_name: file_name,
+            config: config,
+            public_inputs: public_inputs,
             template_name: None,
         }
 };
 
 // ... Continue with other rules if needed
 
-STRING : String = {
-    <s:r#""[^"]*""#> => String::from(&s[1..s.len()-1])
-};
-
-Number: u32 = <n:r"[0-9]+"> => n.parse().unwrap();
-
-SeparatedCommaNumber: Vec<u32> = {
-    <head: Number> <tail:("," Number)*> => {
-        let mut vec = vec![head];
-        vec.extend(tail.into_iter().map(|(_, item)| item));
-        vec
-    }
-};
-
 SeparatedCommaString: Vec<String> = {
     <head: STRING> <tail:("," STRING)*> => {
-        let mut vec = vec![head];
-        vec.extend(tail.into_iter().map(|(_, item)| item));
+        let mut vec = vec![head.to_string()];
+        vec.extend(tail.into_iter().map(|(_, item)| item.to_string()));
         vec
     }
 };
+
+FileNameProperty: String = 
+    <kv:KeyValuePair> => {
+        if kv.0 == "fileName" {
+            kv.1.to_string()
+        } else {
+            panic!("Expected 'fileName', got {}", kv.0)
+        }
+    };
+
+ConfigProperty: Option<Vec<String>> = {
+    "config:" "(" <strings: SeparatedCommaString> ")" "," => Some(strings),
+    () => None
+};
+
+
+PublicInputsProperty: Vec<String> = {
+    "publicInputs:" "[" <inputs: SeparatedCommaString> "]" "," => {
+        let mut default_inputs = vec![
+            String::from("transactionHash"),
+            String::from("publicAppVerifier"),
+        ];
+        let mut combined = if inputs.is_empty() {
+            Vec::<String>::new()
+        } else {
+            inputs
+        };
+        default_inputs.append(&mut combined);
+        default_inputs
+    },
+    () => vec![
+        String::from("transactionHash"),
+        String::from("publicAppVerifier"),
+    ]
+};
+
+
+KeyValuePair: (String, String) = 
+    <key:STRING> ":" <value:ValueString> => (key.to_string(), value.to_string());
+
+ValueString: String = <s:STRING> => s.to_string();
+
+match {
+    r"\s*" => { }, // whitespace
+    r"//[^\n\r]*[\n\r]*" => { }, // single line comments
+    r"/\*([^\*]*\*+[^\*/])*([^\*]*\*+|[^\*])*\*/" => { }, // multi-line comments
+    r"#\[instance\]" => "#[instance]",
+    r"#\[" => "#[",
+    r"\[" => "[",
+    r"\]" => "]",
+    r"\{" => "{",
+    r"\}" => "}",
+    r"\(" => "(",
+    r"\)" => ")",
+    r":" => ":",
+    r"," => ",",
+    r"-?[a-zA-Z_0-9]+" => STRING,
+    r"publicInputs:" => "publicInputs:",
+    r"config:" => "config:",
+    r"pragma[^;]*;" => { }, // Ignore anything starting with pragma until the next semicolon
+    r"include[^;]*;" => { }, // Ignore anything starting with include until the next semicolon
+    r"template\s+\w+\s*\{[^\}]*\}" => { }, // Ignore pattern like `template name {...}`
+}

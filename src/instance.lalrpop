@@ -1,6 +1,6 @@
 grammar;
 
-use super::Instance;
+use super::*;
 
 // Main rule for parsing the Instance struct
 pub Instance: Instance = {
@@ -82,12 +82,109 @@ match {
     r"\}" => "}",
     r"\(" => "(",
     r"\)" => ")",
+    r"\)\]" => ")]",
     r":" => ":",
     r"," => ",",
-    r"-?[a-zA-Z_0-9]+" => STRING,
     r"publicInputs:" => "publicInputs:",
+    r"#\[checkInUtxo\(" => "#[checkInUtxo(",
+    r"#\[checkOutUtxo\(" => "#[checkOutUtxo(",
+    r"amountSol " => "amountSol ",
+    r"amountSpl " => "amountSpl ",
+    r"appDataHash " => "appDataHash ",
+    r"utxoData:" => "utxoData:",
+    r"assetSpl " => "assetSpl ",
+    r"==" => "==",
+    r"!=" => "!=",
+    r">" => ">",
+    r"<" => "<",
+    r">=" => ">=",
+    r"<=" => "<=",
     r"config:" => "config:",
     r"pragma[^;]*;" => { }, // Ignore anything starting with pragma until the next semicolon
     r"include[^;]*;" => { }, // Ignore anything starting with include until the next semicolon
-    r"template\s+\w+\s*\{[^\}]*\}" => { }, // Ignore pattern like `template name {...}`
+    r"template\s+\w+\s*\{[^\}]*\}" => { }, // Ignore pattern like `template name {...}`,
+    r"-?[a-zA-Z_0-9]+" => STRING
 }
+
+pub CheckUtxoType: CheckUtxo = {
+    "#[checkInUtxo(" <name:STRING> "," <no_utxos:STRING> "," <instruction:STRING> ")]" <fields:CheckUtxoFields> => {
+        CheckUtxo {
+            code: "".to_string(), 
+            name: name.to_string(),
+            is_in_utxo: true,
+            is_out_utxo: false,
+            instruction_name: Some(instruction.to_string()),
+            no_utxos: no_utxos.to_string(),
+            amount_sol: fields.0,
+            amount_spl: fields.1,
+            asset_spl: fields.2,
+            app_data_hash: fields.3,
+            utxo_data: fields.4,
+        }
+    },
+    "#[checkOutUtxo(" <name:STRING> "," <no_utxos:STRING> "," <instruction:STRING> ")]" <fields:CheckUtxoFields> => {
+        CheckUtxo {
+            code: "".to_string(),
+            name: name.to_string(),
+            is_in_utxo: false,
+            is_out_utxo: true,
+            instruction_name: Some(instruction.to_string()),
+            no_utxos: no_utxos.to_string(),
+            amount_sol: fields.0,
+            amount_spl: fields.1,
+            asset_spl: fields.2,
+            app_data_hash: fields.3,
+            utxo_data: fields.4,
+        }
+    }
+};
+
+CheckUtxoFields: (Option<(Comparator, String)>, Option<(Comparator, String)>, Option<(Comparator, String)>, Option<(Comparator, String)>, Option<Vec<(String, Option<Comparator>, Option<String>)>>) = {
+    "{" <amount_sol:AmountSolProperty> <amount_spl:AmountSplProperty> <asset_spl:AssetSplProperty> <app_data_hash:AppDataHashProperty> <utxo_data:UtxoDataProperty> "}" => (amount_sol, amount_spl, asset_spl, app_data_hash, utxo_data)
+};
+
+AmountSolProperty: Option<(Comparator, String)> = {
+    "amountSol " <comparator:COMPARATOR> <value:STRING> "," => Some((comparator, value.to_string())),
+    () => None
+};
+
+AmountSplProperty: Option<(Comparator, String)> = {
+    "amountSpl " <comparator:COMPARATOR> <value:STRING> "," => Some((comparator, value.to_string())),
+    () => None
+};
+
+AssetSplProperty: Option<(Comparator, String)> = {
+    "assetSpl " <comparator:COMPARATOR> <value:STRING> "," => Some((comparator, value.to_string())),
+    () => None
+};
+
+AppDataHashProperty: Option<(Comparator, String)> = {
+    "appDataHash " <comparator:COMPARATOR> <value:STRING> "," => Some((comparator, value.to_string())),
+    () => None
+};
+
+UtxoDataProperty: Option<Vec<(String, Option<Comparator>, Option<String>)>> = {
+    "utxoData:" "{" <fields:UtxoDataFields> "}" => Some(fields),
+    () => None
+};
+
+UtxoDataFields: Vec<(String, Option<Comparator>, Option<String>)> = {
+    <fields: UtxoDataField*> => fields
+};
+
+UtxoDataField: (String, Option<Comparator>, Option<String>) = {
+    <attribute:STRING> "," => (attribute.to_string(), None, None),
+    <attribute:STRING> <comparator:COMPARATOR> <comparison_value:STRING> "," => (attribute.to_string(), Some(comparator), Some(comparison_value.to_string()))
+};
+
+
+
+
+COMPARATOR: Comparator = {
+    "==" => Comparator::Equal,
+    "!=" => Comparator::NotEqual,
+    ">" => Comparator::GreaterThan,
+    "<" => Comparator::LessThan,
+    ">=" => Comparator::GreaterEqualThan,
+    "<=" => Comparator::LessEqualThan
+};
