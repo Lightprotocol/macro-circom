@@ -9,8 +9,8 @@ pub Instance: Instance = {
 
 InstanceFields: Instance = {
     <file_name:FileNameProperty> ","
-    <config:ConfigProperty> ","
-    <public_inputs:PublicInputsProperty> "," => 
+    <config:ConfigProperty>
+    <public_inputs:PublicInputsProperty> => 
         Instance {
             file_name: file_name,
             config: config,
@@ -20,14 +20,6 @@ InstanceFields: Instance = {
 };
 
 // ... Continue with other rules if needed
-
-SeparatedCommaNumber: Vec<u32> = {
-    <head: Number> <tail:("," Number)*> => {
-        let mut vec = vec![head];
-        vec.extend(tail.into_iter().map(|(_, item)| item));
-        vec
-    }
-};
 
 SeparatedCommaString: Vec<String> = {
     <head: STRING> <tail:("," STRING)*> => {
@@ -46,35 +38,37 @@ FileNameProperty: String =
         }
     };
 
-ConfigProperty: Vec<u32> =
-    <key:STRING> ":" "(" <numbers:SeparatedCommaNumber> ")" => {
-        if key == "config" {
-            numbers
-        } else {
-            panic!("Expected 'config', got {}", key)
-        }
-    };
+ConfigProperty: Option<Vec<String>> = {
+    "config:" "(" <strings: SeparatedCommaString> ")" "," => Some(strings),
+    () => None
+};
 
 
-
-PublicInputsProperty: Vec<String> = <key:STRING> ":" "[" <inputs:SeparatedCommaString> "]" => {
-    if key == "publicInputs" {
+PublicInputsProperty: Vec<String> = {
+    "publicInputs:" "[" <inputs: SeparatedCommaString> "]" "," => {
         let mut default_inputs = vec![
             String::from("transactionHash"),
             String::from("publicAppVerifier"),
         ];
-        let mut combined = inputs;
-        combined.append(&mut default_inputs);
-        combined
-    }else {
-        panic!("Expected 'publicInputs', got {}", key)
-}};
+        let mut combined = if inputs.is_empty() {
+            Vec::<String>::new()
+        } else {
+            inputs
+        };
+        default_inputs.append(&mut combined);
+        default_inputs
+    },
+    () => vec![
+        String::from("transactionHash"),
+        String::from("publicAppVerifier"),
+    ]
+};
+
+
 KeyValuePair: (String, String) = 
     <key:STRING> ":" <value:ValueString> => (key.to_string(), value.to_string());
 
 ValueString: String = <s:STRING> => s.to_string();
-
-Number: u32 = <n: NUMBER> => n.parse().unwrap();
 
 match {
     r"\s*" => { }, // whitespace
@@ -90,6 +84,10 @@ match {
     r"\)" => ")",
     r":" => ":",
     r"," => ",",
-    r"[0-9]+" => NUMBER,
-    r"-?[a-zA-Z_]+" => STRING,
+    r"-?[a-zA-Z_0-9]+" => STRING,
+    r"publicInputs:" => "publicInputs:",
+    r"config:" => "config:",
+    r"pragma[^;]*;" => { }, // Ignore anything starting with pragma until the next semicolon
+    r"include[^;]*;" => { }, // Ignore anything starting with include until the next semicolon
+    r"template\s+\w+\s*\{[^\}]*\}" => { }, // Ignore pattern like `template name {...}`
 }
