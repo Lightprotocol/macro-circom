@@ -1,0 +1,32 @@
+grammar;
+
+use super::*;
+
+pub IgnoredContent: Option<Vec<String>> = {
+    <s:S_COMMENT?> <m:M_COMMENT?> <p:PRAGMA?> <i:IMPORTS?> <t:TEMPLATES?> => {
+        let mut v = Vec::new();
+        if let Some(s) = s { v.push(s.to_string()); }
+        if let Some(m) = m { v.push(m.to_string()); }
+        if let Some(p) = p { v.push(p.to_string()); }
+        if let Some(i) = i { v.push(i.to_string()); }
+        if let Some(t) = t { v.push(t.to_string()); }
+        if v.is_empty() {
+            None
+        } else {
+            Some(v)
+        }
+    }
+};
+
+
+match {
+    r"\s*" => { }, // whitespace
+    r"#\[checkInUtxo\([^\)]*\)\]\s*(//.*[\r\n]*)*\s*\{(?:[^{]*|(?:\{[^}]*\}))*\}" => {},
+    r"#\[checkOutUtxo\([^\)]*\)\]\s*(//.*[\r\n]*)*\s*\{(?:[^{]*|(?:\{[^}]*\}))*\}" => {},
+    r"#\[instance\]\{[^\}]*\}" => {},
+    r"//[^\n\r]*[\n\r]*" => S_COMMENT, // single line comments
+    r"/\*([^\*]*\*+[^\*/])*([^\*]*\*+|[^\*])*\*/" => M_COMMENT, // multi-line comments
+    r"pragma[^;]*;" => PRAGMA, // Ignore anything starting with pragma until the next semicolon
+    r"include[^;]*;" => IMPORTS, // Ignore anything starting with include until the next semicolon
+    r"template\s+\w+\s*\{[^\}]*\}" => TEMPLATES, // Ignore pattern like `template name {...}`
+}

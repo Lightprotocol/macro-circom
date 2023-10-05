@@ -70,10 +70,11 @@ KeyValuePair: (String, String) =
 
 ValueString: String = <s:STRING> => s.to_string();
 
+
 match {
     r"\s*" => { }, // whitespace
-    r"//[^\n\r]*[\n\r]*" => { }, // single line comments
-    r"/\*([^\*]*\*+[^\*/])*([^\*]*\*+|[^\*])*\*/" => { }, // multi-line comments
+    r"//[^\n\r]*[\n\r]*" => {}, // single line comments
+    r"/\*([^\*]*\*+[^\*/])*([^\*]*\*+|[^\*])*\*/" => {}, // multi-line comments
     r"#\[instance\]" => "#[instance]",
     r"#\[" => "#[",
     r"\[" => "[",
@@ -100,9 +101,9 @@ match {
     r">=" => ">=",
     r"<=" => "<=",
     r"config:" => "config:",
-    r"pragma[^;]*;" => { }, // Ignore anything starting with pragma until the next semicolon
-    r"include[^;]*;" => { }, // Ignore anything starting with include until the next semicolon
-    r"template\s+\w+\s*\{[^\}]*\}" => { }, // Ignore pattern like `template name {...}`,
+    r"pragma[^;]*;" => {}, // Ignore anything starting with pragma until the next semicolon
+    r"include[^;]*;" => {}, // Ignore anything starting with include until the next semicolon
+    r"template\s+\w+\s*\{[^\}]*\}" => {}, // Ignore pattern like `template name {...}`,
     r"-?[a-zA-Z_0-9]+" => STRING
 }
 

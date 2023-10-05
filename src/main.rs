@@ -3,6 +3,7 @@ pub mod checkUtxo;
 pub use checkUtxo::*;
 pub mod connecting_hash_circom;
 pub mod errors;
+pub mod ignoredContent;
 use crate::checkUtxo::generate_check_utxo_code;
 use crate::errors::MacroCircomError;
 use crate::{

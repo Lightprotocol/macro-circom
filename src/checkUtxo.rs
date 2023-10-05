@@ -428,7 +428,7 @@ pub fn generate_check_utxo_code(
 // - test in voting
 
 mod tests {
-    use crate::checkUtxo;
+    use crate::{checkUtxo, instance};
 
     use super::*;
     /* TODO: rewrite with parser
@@ -721,7 +721,9 @@ checkInAmountSolUtxoName[i] = ForceEqualIfEnabled();
     #[test]
     fn complete_test_2() {
         let contents = String::from(
-            "#[checkInUtxo(utxoName, 1, instruction)]
+            "pragma circom 2.1.4;
+            include \"../../node_modules/circomlib/circuits/poseidon.circom\";
+            #[checkInUtxo(utxoName, 1, instruction)]
         // to append to otherwise duplicate identifiers
         {
             amountSol == sth, // enable comparisons ==, <=, <, =>, >
@@ -827,5 +829,17 @@ checkInAmountSolUtxoName[i] = ForceEqualIfEnabled();
                 ),
             ])
         );
+        // let ignored_contents = crate::ignoredContent::IgnoredContentParser::new()
+        //     .parse(&remainingContent)
+        //     .unwrap();
+        let mut ignored_contents =
+            match crate::ignoredContent::IgnoredContentParser::new().parse(&remainingContent) {
+                Ok(instance) => instance,
+                Err(error) => {
+                    panic!("{}", describe_error(&remainingContent, error));
+                }
+            };
+        println!("ignored contents: {}", ignored_contents.unwrap().join(","));
+        // latest idea to ignore content is to define an inverse grammar that ignores everything the other grammar matches
     }
 }
