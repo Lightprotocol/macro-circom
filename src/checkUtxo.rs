@@ -88,154 +88,6 @@ impl CheckUtxo {
         }
     }
 
-    pub fn parse_header(header: &str) -> Result<Self, MacroCircomError> {
-        let re = Regex::new(r"^#\[\s*checkInUtxo\((?P<name>[a-zA-Z_][a-zA-Z0-9_]*),\s*(?P<no_utxos>\d+)(?:,\s*(?P<instruction_name>[a-zA-Z_][a-zA-Z0-9_]*))?\)\s*\]$").unwrap();
-        println!("header raw  {:?}", header);
-        println!("header {:?}", re.captures(header));
-        if let Some(caps) = re.captures(header) {
-            let name = caps["name"].to_string().to_upper_camel_case();
-            let no_utxos = caps["no_utxos"]
-                .parse()
-                .map_err(|_| "Failed to parse number of UTXOs")
-                .unwrap();
-
-            // Use the instruction name if it exists; otherwise, default to None
-            let instruction_name = caps
-                .name("instruction_name")
-                .map(|instr| instr.as_str().to_string().to_lower_camel_case());
-
-            Ok(CheckUtxo {
-                code: String::new(),
-                name,
-                is_in_utxo: false,
-                is_out_utxo: false,
-                instruction_name,
-                no_utxos,
-                amount_sol: None,
-                amount_spl: None,
-                asset_spl: None,
-                app_data_hash: None,
-                utxo_data: None,
-            })
-        } else {
-            Err(MacroCircomError::CheckUtxoInvalidHeaderFormat)
-        }
-    }
-
-    fn match_comparator(string: &str) -> Result<Comparator, MacroCircomError> {
-        match string {
-            "==" => Ok(Comparator::Equal),
-            // not supported yet
-            // "!=" => Ok(Comparator::NotEqual),
-            // ">" => Ok(Comparator::GreaterThan),
-            // "<" => Ok(Comparator::LessThan),
-            // ">=" => Ok(Comparator::GreaterEqualThan),
-            // "<=" => Ok(Comparator::LessEqualThan),
-            _ => Err(MacroCircomError::InvalidComparator(string.to_string())),
-        }
-    }
-
-    pub fn process_line(&mut self, line: &str) -> Result<(), MacroCircomError> {
-        let parts: Vec<&str> = line.split_whitespace().collect();
-        let re = Regex::new(r"^[, \t\n\r]+|[, \t\n\r]+$").unwrap();
-
-        if parts[0].contains("utxoData") {
-            if self.utxo_data.is_none() {
-                self.utxo_data = Some(Vec::new());
-                return Ok(());
-            } else {
-                return Err(MacroCircomError::PropertyDefinedMultipleTimes);
-            }
-        }
-
-        let comparator = CheckUtxo::match_comparator(parts[1])?;
-        println!("Processing parts: {:?}", parts);
-        match parts[0] {
-            "amountSol" => {
-                if self.amount_sol.is_none() {
-                    self.amount_sol = Some((comparator, re.replace_all(parts[2], "").to_string()));
-                    Ok(())
-                } else {
-                    Err(MacroCircomError::PropertyDefinedMultipleTimes)
-                }
-            }
-            "amountSpl" => {
-                if self.amount_spl.is_none() {
-                    self.amount_spl = Some((comparator, re.replace_all(parts[2], "").to_string()));
-                    Ok(())
-                } else {
-                    Err(MacroCircomError::PropertyDefinedMultipleTimes)
-                }
-            }
-            "assetSpl" => {
-                if self.asset_spl.is_none() {
-                    self.asset_spl = Some((comparator, re.replace_all(parts[2], "").to_string()));
-                    Ok(())
-                } else {
-                    Err(MacroCircomError::PropertyDefinedMultipleTimes)
-                }
-            }
-            "appDataHash" => {
-                if self.app_data_hash.is_none() {
-                    self.app_data_hash =
-                        Some((comparator, re.replace_all(parts[2], "").to_string()));
-                    Ok(())
-                } else {
-                    Err(MacroCircomError::PropertyDefinedMultipleTimes)
-                }
-            }
-            _ => Err(MacroCircomError::InvalidProperty),
-        }
-    }
-    pub fn process_utxo_data_line(&mut self, line: &str) -> Result<(i32), MacroCircomError> {
-        let parts: Vec<&str> = line.split_whitespace().collect();
-        let re = Regex::new(r"^[, \t\n\r]+|[, \t\n\r]+$").unwrap();
-        println!("Processing utxo data parts: {:?}", parts);
-        if parts.contains(&"}") {
-            return Ok(2);
-        }
-
-        if parts.len() == 1 {
-            self.utxo_data.as_mut().unwrap().push((
-                re.replace_all(parts[0], "").to_string(),
-                None,
-                None,
-            ));
-            return Ok(1);
-        }
-
-        if parts.len() < 3 {
-            return Err(MacroCircomError::PropertyDefinedMultipleTimes);
-        }
-
-        let comparator = CheckUtxo::match_comparator(parts[1])?;
-        self.utxo_data.as_mut().unwrap().push((
-            re.replace_all(parts[0], "").to_string(),
-            Some(comparator),
-            Some(re.replace_all(parts[2], "").to_string()),
-        ));
-        Ok((1))
-    }
-    pub fn from_input(&mut self, input: &Vec<String>) -> Result<(), MacroCircomError> {
-        // is 0 when not found, 1 when found, 2 when finished
-        let mut found_utxo_data = 0;
-        for line in input.iter() {
-            println!("{}", line);
-
-            if found_utxo_data == 0 && self.utxo_data.is_some() {
-                // found_utxo_data += 1;
-                found_utxo_data = self.process_utxo_data_line(line)?;
-            } else if found_utxo_data == 0 {
-                println!("found utxo data ");
-                self.process_line(line)?;
-            } else if found_utxo_data == 1 {
-                println!("found utxo data");
-                found_utxo_data = self.process_utxo_data_line(line)?;
-            }
-        }
-        Ok(())
-    }
-
     pub fn generate_signals(&mut self) {
         // generate the signals
         // only utxo data inputs need signals
@@ -551,40 +403,18 @@ pub fn generate_check_utxo_code(
             panic!("{}", describe_error(&remaining_contents, error));
         }
     };
-    for utxo in &mut checkedUtxos {
-        utxo.generate_signals();
-        utxo.generate_components()?;
-        utxo.generate_instruction_hash_code()?;
-        utxo.generate_comparison_check_code()?;
-    }
-
-    // let mut string_remaining_contents = String::new();
-    // for i in 0..4 {
-    // starts with #[check{}Utxo( // In or Out
-    // let (extractedCheckInUtxos, header_string, _remaining_contents, is_empty) =
-    //     parse_general_between_curly_brackets(
-    //         &remaining_contents,
-    //         &format!("#[check{}Utxo(", utxo_type),
-    //         false,
-    //         false,
-    //     )?;
-    // println!("is empty: {}", is_empty);
-
-    // remaining_contents = _remaining_contents;
-    // println!("i {}", i);
-    // println!("remaining contents: {}", remaining_contents);
-    // if is_empty {
-    //     return Ok((remaining_contents, checkedUtxos));
-    // }
-    // let check_utxo_res = crate::instance::CheckUtxoTypeParser::new().parse(&remaining_contents); //CheckUtxo::new().parse(&remaining_contents)?;
-    // let mut check_utxo = CheckUtxo::parse_header(&header_string)?;
-    // check_utxo.parse_utxo_data(utxoData);
     // got all the info now generate the code
     // generate the input signals
     // generate the components
     // generate the loop
     // generate the components inside the loop
     // close the loop
+    for utxo in &mut checkedUtxos {
+        utxo.generate_signals();
+        utxo.generate_components()?;
+        utxo.generate_instruction_hash_code()?;
+        utxo.generate_comparison_check_code()?;
+    }
 
     Ok((remaining_contents, checkedUtxos))
 }
@@ -597,178 +427,53 @@ pub fn generate_check_utxo_code(
 // - put into main.rs
 // - test in voting
 
-/*
-let (instruction_hash_code, contents, utxo_data_variable_names) = parse_general(
-    &contents,
-    &String::from("#[utxoData]"),
-    generate_instruction_hash_code,
-    true,
-    &instance,
-)?;
-*/
-
-pub fn parse_general_between_curly_brackets(
-    input: &String,
-    starting_string: &String,
-    critical: bool,
-    multiple: bool,
-) -> Result<(Vec<String>, String, String, bool), MacroCircomError> {
-    let mut found_bracket = false;
-    let mut remaining_lines = Vec::new();
-    let mut found_instance: u8 = 0;
-    let mut commented = false;
-    let mut bracket_str = Vec::<String>::new();
-    let mut header_string = String::new();
-    for line in input.lines() {
-        if found_instance > 1 && !multiple {
-            remaining_lines.push(line);
-            found_bracket = false;
-            continue;
-        }
-        println!("found instance: {}", found_instance);
-        println!("line: {}", line);
-        let line = line.trim();
-        if line.starts_with("//") {
-            continue;
-        }
-        if line.starts_with("/* ") || line.starts_with("/**") {
-            commented = true;
-            remaining_lines.push(line);
-            continue;
-        }
-        if commented {
-            remaining_lines.push(line);
-            if line.find("*/").is_some() {
-                commented = false;
-            }
-            continue;
-        }
-        if found_instance == 0 && line.starts_with(starting_string) {
-            // cannot accept overloads implementations
-            // if found_instance == true {
-            //     panic!();
-            // };
-            found_instance += 1;
-            found_bracket = true;
-            header_string = line.to_string();
-            if found_instance > 1 && !multiple {
-                bracket_str.push(line.to_string());
-                found_bracket = false;
-            }
-            continue;
-        }
-        if found_instance > 0 && line.starts_with("{") {
-            continue;
-        }
-        if found_bracket && found_instance > 0 && line.starts_with("}") || line.ends_with("}") {
-            found_bracket = false;
-            remaining_lines.push(line);
-            // if multiple {
-            //     found_instance += 1;
-            // }
-            continue;
-        }
-
-        if found_bracket {
-            bracket_str.push(line.to_string());
-        }
-        if !found_bracket {
-            remaining_lines.push(line);
-        }
-    }
-    if found_bracket {
-        println!("remaining lines {}", remaining_lines.join("\n"));
-        println!("bracket str {}", bracket_str.join("\n"));
-        println!("header string {}", header_string);
-        println!("input {}", input);
-        panic!();
-        return Err(ParseInstanceError(input.to_string()));
-    }
-    if found_instance == 0 && critical {
-        return Err(ParseInstanceError(input.to_string()));
-    }
-
-    Ok((
-        bracket_str,
-        header_string,
-        remaining_lines.join("\n"),
-        found_instance == 0,
-    ))
-}
-
 mod tests {
     use crate::checkUtxo;
 
     use super::*;
+    /* TODO: rewrite with parser
+        #[test]
+        fn generate_check_in_utxo_code_test() {
+            let contents = String::from(
+                "#[checkInUtxo(utxoName, 1, instruction)]
+            // to append to otherwise duplicate identifiers
+           {
+                amountSol == sth, // enable comparisons ==, <=, <, =>, >
+                amountSpl == sth,
+                assetSpl == sth,
+                // blinding == sth,
+                appDataHash == sth,
+                // poolType: sth, // always 0
+                // verifierPubkey: // has to be this verifier
+                utxoData: {
+                   attribute1,
+                   attribute2 == testComparison,
+                   }
+               }",
+            );
 
-    #[test]
-    fn test_parse_header() {
-        // Valid input with instruction_name
-        let header = "#[checkInUtxo(inputUtxo,1,test)]";
-        let result = CheckUtxo::parse_header(header);
-        assert!(result.is_ok());
-        let utxo = result.unwrap();
-        assert_eq!(utxo.name, "InputUtxo");
-        assert_eq!(utxo.no_utxos, "1");
-        assert_eq!(utxo.instruction_name, Some("test".to_string()));
-
-        // Valid input without instruction_name
-        let header2 = "#[checkInUtxo(inputUtxo,2)]";
-        let result2 = CheckUtxo::parse_header(header2);
-        assert!(result2.is_ok());
-        let utxo2 = result2.unwrap();
-        assert_eq!(utxo2.name, "InputUtxo");
-        assert_eq!(utxo2.no_utxos, "2");
-        assert_eq!(utxo2.instruction_name, None);
-
-        // Invalid format
-        let header3 = "#[invalidHeader(inputUtxo,1)]";
-        let result3 = CheckUtxo::parse_header(header3);
-        assert_eq!(result3, Err(MacroCircomError::CheckUtxoInvalidHeaderFormat));
-    }
-
-    #[test]
-    fn generate_check_in_utxo_code_test() {
-        let contents = String::from(
-            "#[checkInUtxo(utxoName, 1, instruction)]
-        // to append to otherwise duplicate identifiers
-       {
-            amountSol == sth, // enable comparisons ==, <=, <, =>, >
-            amountSpl == sth,
-            assetSpl == sth,
-            // blinding == sth,
-            appDataHash == sth,
-            // poolType: sth, // always 0
-            // verifierPubkey: // has to be this verifier
-            utxoData: {
-               attribute1,
-               attribute2 == testComparison,
-               }
-           }",
-        );
-
-        let (extractedCheckInUtxos, header_string, remainingContents, is_empty) =
-            parse_general_between_curly_brackets(
-                &contents,
-                &String::from("#[checkInUtxo("),
-                false,
-                false,
-            )
-            .unwrap();
-        let mut check_utxo = CheckUtxo::parse_header(&header_string).unwrap();
-        assert_eq!(check_utxo.name, "UtxoName");
-        assert_eq!(check_utxo.no_utxos, "1");
-        assert_eq!(
-            check_utxo.instruction_name,
-            Some(String::from("instruction"))
-        );
-        check_utxo.from_input(&extractedCheckInUtxos).unwrap();
-        assert_eq!(
-            check_utxo.amount_sol,
-            Some((Comparator::Equal, String::from("sth")))
-        );
-    }
-
+            let (extractedCheckInUtxos, header_string, remainingContents, is_empty) =
+                parse_general_between_curly_brackets(
+                    &contents,
+                    &String::from("#[checkInUtxo("),
+                    false,
+                    false,
+                )
+                .unwrap();
+            let mut check_utxo = CheckUtxo::parse_header(&header_string).unwrap();
+            assert_eq!(check_utxo.name, "UtxoName");
+            assert_eq!(check_utxo.no_utxos, "1");
+            assert_eq!(
+                check_utxo.instruction_name,
+                Some(String::from("instruction"))
+            );
+            check_utxo.from_input(&extractedCheckInUtxos).unwrap();
+            assert_eq!(
+                check_utxo.amount_sol,
+                Some((Comparator::Equal, String::from("sth")))
+            );
+        }
+    */
     #[test]
     fn generate_signals_test() {
         // Setting up a CheckUtxo instance with mock data
