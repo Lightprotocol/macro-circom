@@ -1,11 +1,8 @@
 use handlebars::Handlebars;
 use serde_json::json;
-use std::{
-    fs::{self},
-    io::prelude::*,
-};
+
 extern crate syn;
-use crate::{checkUtxo::CheckUtxo, Instance};
+use crate::{checkUtxo::CheckUtxo, utils::write_rust_code_to_file, Instance};
 
 pub const AUTO_GENERATED_ACCOUNTS_TEMPLATE: &str = "
 use anchor_lang::prelude::*;
@@ -58,11 +55,12 @@ pub struct UtxoAppData {
     pub {{this}}: u256,
     {{/each}}
 }";
+
 // TODO: reflect utxo name in the template
 // TODO: reflect whether it's in or out utxo in the template
-fn gen_code_auto_generated_accounts(
-    instance: Instance,
-    checked_in_utxos: Vec<CheckUtxo>,
+pub fn gen_code_auto_generated_accounts(
+    instance: &Instance,
+    checked_in_utxos: &Vec<CheckUtxo>,
 ) -> String {
     let utxo_data_variable_names = checked_in_utxos[0]
         .clone()
@@ -85,40 +83,11 @@ fn gen_code_auto_generated_accounts(
         .unwrap_or_default()
 }
 
-pub fn gen_code_auto_generated_accounts_file(
-    program_name: String,
-    instance: Instance,
-    checked_in_utxos: Vec<CheckUtxo>,
-) {
-    let code = gen_code_auto_generated_accounts(instance, checked_in_utxos);
-    let path = "./programs/".to_owned() + &program_name + "/src/auto_generated_accounts.rs";
-    write_code_to_file(path, code);
-}
-
-pub fn write_code_to_file(path: String, code: String) {
-    let code = crate::rustfmt(code).unwrap();
-    let mut output_file_idl = fs::File::create(path).unwrap();
-    output_file_idl.write(&code).unwrap();
-    // write!(&mut output_file_idl, "{}", code).unwrap();
-}
-
 #[cfg(test)]
 mod auto_generated_accounts_tests {
     use super::*;
-    use quote::ToTokens;
-    /// Asserts that two Rust code strings are equivalent by parsing them with `syn` and comparing the token streams.
-    fn assert_syn_eq(output: &str, expected_output: &str) {
-        let parsed_output: syn::File =
-            syn::parse_str(output).expect("Failed to parse expected output");
-        let parsed_expected: syn::File =
-            syn::parse_str(expected_output).expect("Failed to parse expected output");
-
-        let output_tokens = parsed_output.into_token_stream().to_string();
-        let expected_tokens = parsed_expected.into_token_stream().to_string();
-
-        assert_eq!(output_tokens, expected_tokens);
-    }
-
+    use crate::utils::assert_syn_eq;
+    use std::{fs::File, io::prelude::*};
     #[test]
     fn test_functional() {
         let file_path = "./tests/test-files/test-data-psp/auto_generated_accounts.rs";
@@ -130,7 +99,7 @@ mod auto_generated_accounts_tests {
             .expect("Unable to read the file");
 
         let output = gen_code_auto_generated_accounts(
-            Instance {
+            &Instance {
                 public_inputs: vec![
                     String::from("publicZ"),
                     String::from("transactionHash"),
@@ -140,7 +109,7 @@ mod auto_generated_accounts_tests {
                 template_name: None,
                 config: None,
             },
-            vec![CheckUtxo {
+            &vec![CheckUtxo {
                 utxo_data: Some(vec![
                     (String::from("x"), None, None),
                     (String::from("y"), None, None),

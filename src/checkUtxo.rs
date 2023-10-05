@@ -420,7 +420,7 @@ pub fn generate_check_utxo_code(
 // - test in voting
 
 mod tests {
-    use crate::{checkUtxo, instance};
+    use crate::utils::assert_syn_eq;
 
     use super::*;
     /* TODO: rewrite with parser
@@ -823,13 +823,13 @@ checkInAmountSolUtxoName[i] = ForceEqualIfEnabled();
         //     .parse(&remainingContent)
         //     .unwrap();
         let mut ignored_contents =
-            match crate::ignoredContent::IgnoredContentParser::new().parse(&remainingContent) {
+            match crate::ignoredContent::ImportsParser::new().parse(&remainingContent) {
                 Ok(instance) => instance,
                 Err(error) => {
                     panic!("{}", describe_error(&remainingContent, error));
                 }
             };
-        println!("ignored contents: {}", ignored_contents.unwrap().join(","));
+        println!("ignored contents: {}", ignored_contents.join(","));
         // latest idea to ignore content is to define an inverse grammar that ignores everything the other grammar matches
     }
 }

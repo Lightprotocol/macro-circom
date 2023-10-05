@@ -14,15 +14,17 @@ include "../../node_modules/circomlib/circuits/comparators.circom";
     publicInputs: [publicZ]
 }
 
+#[utxoData]
+{
+    x,
+    y
+}
+
 #[lightTransaction(verifierTwo)]
 template test_data() {
     // Defines the data which is saved in the utxo
     // utxoData variables need to be lowerCamelCase
-    #[utxoData]
-    {
-        x,
-        y
-    }
+
     signal input publicZ;
     publicZ === x + y;
 }
