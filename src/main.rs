@@ -1,13 +1,13 @@
-pub mod auto_generated_accounts_template;
 pub mod checkUtxo;
 pub use checkUtxo::*;
+pub mod code_gen;
 pub mod connecting_hash_circom;
 pub mod errors;
 pub mod ignoredContent;
 use crate::checkUtxo::generate_check_utxo_code;
 use crate::errors::MacroCircomError;
 use crate::{
-    auto_generated_accounts_template::AUTO_GENERATED_ACCOUNTS_TEMPLATE, checkUtxo::CheckUtxo,
+    checkUtxo::CheckUtxo, code_gen::auto_generated_accounts::AUTO_GENERATED_ACCOUNTS_TEMPLATE,
 };
 use anyhow::{anyhow, Error as AnyhowError};
 
@@ -21,6 +21,8 @@ use std::{
     thread::spawn,
 };
 mod instance;
+
+use clap::{App, Arg};
 
 pub fn describe_error(
     input: &str,
@@ -148,15 +150,45 @@ fn remove_filename_suffix(input: &str) -> Result<(String, String), &'static str>
 // throw error when there is no #[instance]
 // throw error when there is no #[lightTransaction(verifierTwo)]
 // add test for no config inputs
+/*
+* Structure:
+* - get instance (returns struct with file name, template name, config, public inputs)
+* - get checkedUtxos (returns structs with code and utxo data)
+* - get light transaction body
+* - generate circom file
+*/
+
+// TODO:
+// - refactor code gen into separate files
+
 fn main() -> Result<(), AnyhowError> {
     // Take the filename from argv
-    let args: Vec<String> = env::args().collect();
-    if args.len() < 3 {
-        eprintln!("Usage: {} <file_path>", args[0]);
-        std::process::exit(1);
-    }
-    let file_path = &args[1];
-    let program_name = &args[2];
+    // let args: Vec<String> = env::args().collect();
+    // if args.len() < 3 {
+    //     eprintln!("Usage: {} <file_path>", args[0]);
+    //     std::process::exit(1);
+    // }
+    // let file_path = &args[1];
+    // let program_name = &args[2];
+    let matches = App::new("macro-circom")
+        .version("0.1")
+        .arg(
+            Arg::with_name("file_path")
+                .help("Path to the file")
+                .required(true)
+                .index(1),
+        )
+        .arg(
+            Arg::with_name("program_name")
+                .help("Name of the program")
+                .required(true)
+                .index(2),
+        )
+        .get_matches();
+
+    // Get the values of the arguments
+    let file_path = matches.value_of("file_path").unwrap();
+    let program_name = matches.value_of("program_name").unwrap();
 
     let (path_to_parent_dir, file_name) = remove_filename_suffix(file_path).unwrap();
     // Open the file
@@ -166,22 +198,16 @@ fn main() -> Result<(), AnyhowError> {
     let mut contents = String::new();
     file.read_to_string(&mut contents)
         .expect("Unable to read the file");
-    // let contents1: &str = contents.as_str();
+
     let mut instance = parse_instance(&contents);
-    // instance = instance[0].clone();
-    let (contents, checkedInUtxos) = generate_check_utxo_code(&contents, &String::from("In"))?;
+
+    let (contents, checkedInUtxos) = generate_check_utxo_code(&contents)?;
     let check_utxos_code = checkedInUtxos[0].code.clone();
-    let utxo_data_variable_names = checkedInUtxos[0]
-        .clone()
-        .utxo_data
-        .unwrap_or(vec![])
-        .iter()
-        .map(|u| u.0.clone())
-        .collect::<Vec<String>>();
 
     let (_verifier_name, contents) =
         parse_light_transaction(&contents, &check_utxos_code, &mut instance).unwrap();
 
+    // start code generation
     let mut output_file =
         fs::File::create(path_to_parent_dir.clone() + "/" + &file_name + ".circom").unwrap();
 
@@ -205,50 +231,9 @@ fn main() -> Result<(), AnyhowError> {
 
     write!(&mut output_file, "{}\n{}", DISCLAIMER_STRING, instance_str).unwrap();
     // output_file.write_all(&rustfmt(instance_str)?)?;
-    let utxo_rust_idl_string = create_rust_idl(UTXO_STRUCT_BASE, &utxo_data_variable_names, "u256");
-    let public_inputs_rust_idl_string = create_rust_idl(
-        PUBLIC_INPUTS_INSTRUCTION_DATA_BASE,
-        &instance.public_inputs[..instance.public_inputs.len() - 2].to_vec(),
-        "[u8; 32]",
-    );
-    let utxo_app_data_rust_idl_string =
-        create_rust_idl(UTXO_APP_DATA_STRUCT_BASE, &utxo_data_variable_names, "u256");
 
-    let light_utils_str = create_light_utils_str(
-        utxo_rust_idl_string,
-        public_inputs_rust_idl_string,
-        utxo_app_data_rust_idl_string,
-        instance,
-    );
-    let mut output_file_idl = fs::File::create(
-        "./programs/".to_owned() + &program_name + "/src/auto_generated_accounts.rs",
-    )
-    .unwrap();
-    write!(&mut output_file_idl, "{}", light_utils_str).unwrap();
+    // TODO: add auto generated accounts
     Ok(())
-}
-
-pub const UTXO_APP_DATA_STRUCT_BASE: &str = "#[allow(non_snake_case)]
-#[account]
-#[derive(Debug, Copy, PartialEq)]
-pub struct UtxoAppData {";
-
-fn create_light_utils_str(
-    utxo_rust_idl_string: String,
-    public_inputs_rust_idl_string: String,
-    utxo_app_data_rust_idl_string: String,
-    instance: Instance,
-) -> String {
-    let mut result = String::from(AUTO_GENERATED_ACCOUNTS_TEMPLATE);
-    let nr_public_inputs = format!(
-        "pub const NR_CHECKED_INPUTS: usize = {};",
-        instance.public_inputs.len()
-    );
-    result = format!("{}\n{}\n", result, nr_public_inputs);
-    result = format!("{}\n{}\n", result, public_inputs_rust_idl_string);
-    result = format!("{}\n{}\n", result, utxo_rust_idl_string);
-    result = format!("{}\n{}\n", result, utxo_app_data_rust_idl_string);
-    result
 }
 
 fn get_string_between_brackets(input: &str) -> Option<&str> {
@@ -327,107 +312,6 @@ fn extract_template_name(input: &str) -> Option<String> {
     Some(input[start..end].trim().to_string())
 }
 
-// fn parse_instance(input: &String) -> Result<(Instance, String), MacroCircomError> {
-//     let mut file_name = String::new();
-//     let mut config: Vec<u32> = Vec::new();
-//     let mut nr_app_utxos: Option<u32> = None;
-//     let mut found_bracket = false;
-//     let mut remaining_lines = Vec::new();
-//     let mut found_instance = false;
-//     let mut public_inputs = vec![
-//         String::from("transactionHash"),
-//         String::from("publicAppVerifier"),
-//     ];
-//     let mut commented = false;
-//     for line in input.lines() {
-//         let line = line.trim();
-//         if line.starts_with("//") {
-//             continue;
-//         }
-//         if line.starts_with("/* ") || line.starts_with("/**") {
-//             commented = true;
-//             remaining_lines.push(line);
-//             continue;
-//         }
-//         if commented {
-//             remaining_lines.push(line);
-//             if line.find("*/").is_some() {
-//                 commented = false;
-//             }
-//             continue;
-//         }
-//         if line.starts_with("#[instance]") {
-//             if found_instance == true {
-//                 return Err(TooManyInstances);
-//             };
-//             found_instance = true;
-//             found_bracket = true;
-//             continue;
-//         }
-//         if found_instance && line.starts_with("{") {
-//             continue;
-//         }
-
-//         if found_bracket {
-//             if line.starts_with("fileName") {
-//                 file_name = line
-//                     .split(":")
-//                     .nth(1)
-//                     .unwrap_or("")
-//                     .trim_end_matches(',')
-//                     .trim()
-//                     .to_owned();
-//                 file_name = format!("{}{}", AsLowerCamelCase(file_name), &"Main");
-//             } else if line.starts_with("config") {
-//                 let numbers: Vec<u32> = line
-//                     .split("(")
-//                     .nth(1)
-//                     .and_then(|s| s.split(")").nth(0))
-//                     .unwrap_or("")
-//                     .split(",")
-//                     .map(|s| s.trim().parse().ok())
-//                     .flatten()
-//                     .collect();
-//                 config = numbers;
-//             } else if let Some(captures) = regex::Regex::new(r"nrAppUtoxs: (\d+)")
-//                 .unwrap()
-//                 .captures(line)
-//             {
-//                 nr_app_utxos = Some(captures.get(1).unwrap().as_str().parse().ok().unwrap());
-//             } else if line.starts_with("publicInputs") {
-//                 let public_inputs_tmp = parse_public_input(line);
-
-//                 for (i, input) in public_inputs_tmp.iter().enumerate() {
-//                     public_inputs.insert(i, input.clone());
-//                 }
-//             }
-//         }
-//         if !found_bracket {
-//             remaining_lines.push(line);
-//         }
-//         if found_instance && line.starts_with("}") {
-//             found_bracket = false;
-//         }
-//     }
-//     if !found_instance {
-//         return Err(NoInstanceDefined);
-//     }
-//     Ok((
-//         Instance {
-//             file_name,
-//             config,
-//             public_inputs,
-//             template_name: None,
-//         },
-//         remaining_lines.join("\n"),
-//     ))
-// }
-
-fn parse_public_input(input: &str) -> Vec<String> {
-    let inner = get_string_between_brackets(input).unwrap();
-    inner.split(',').map(|s| s.trim().to_string()).collect()
-}
-
 fn generate_circom_main_string(instance: &Instance, file_name: &str) -> String {
     let name = instance.template_name.as_ref().unwrap();
     let config = &instance.config;
@@ -449,37 +333,8 @@ component main {{public [{}]}} =  {}({}{} 18, 4, 4, 1845987980201014925033591543
     )
 }
 
-const UTXO_STRUCT_BASE: &str = "\
-#[allow(non_snake_case)]
-#[derive(Debug, Copy, PartialEq)]
-#[account]
-pub struct Utxo {
-    pub amounts: [u64; 2],
-    pub spl_asset_index: u64,
-    pub verifier_address_index: u64,
-    pub blinding: u256,
-    pub app_data_hash: u256,
-    pub account_shielded_public_key: u256,
-    pub account_encryption_public_key: [u8; 32],";
-
-const PUBLIC_INPUTS_INSTRUCTION_DATA_BASE: &str = "#[allow(non_snake_case)]
-#[derive(Debug)]
-#[account]
-pub struct InstructionDataLightInstructionSecond {";
-
-pub fn create_rust_idl(base: &str, public_inputs: &Vec<String>, input_type: &str) -> String {
-    let mut result = String::from(base);
-
-    for input in public_inputs {
-        result = format!("{}\n    pub {}: {},", result, input, input_type);
-    }
-
-    result.push_str("\n}");
-    result
-}
-
 #[allow(dead_code)]
-fn rustfmt(code: String) -> Result<Vec<u8>, anyhow::Error> {
+pub fn rustfmt(code: String) -> Result<Vec<u8>, anyhow::Error> {
     let mut cmd = match env::var_os("RUSTFMT") {
         Some(r) => Command::new(r),
         None => Command::new("rustfmt"),
@@ -778,41 +633,5 @@ mod tests {
     //     assert_eq!(result, Err(anyhow!(InvalidNumberAppUtxos)));
     // }
     #[test]
-    fn test_create_utxo_rust_idl_success() {
-        let public_inputs = vec![String::from("release_slot"), String::from("other_slot")];
-        let result = create_rust_idl(UTXO_STRUCT_BASE, &public_inputs, "u256");
-
-        let expected_output = String::from(
-            "#[allow(non_snake_case)]
-#[derive(Debug, Copy, PartialEq)]
-#[account]
-pub struct Utxo {
-    pub amounts: [u64; 2],
-    pub spl_asset_index: u64,
-    pub verifier_address_index: u64,
-    pub blinding: u256,
-    pub app_data_hash: u256,
-    pub account_shielded_public_key: u256,
-    pub account_encryption_public_key: [u8; 32],
-    pub release_slot: u256,
-    pub other_slot: u256,
-}",
-        );
-
-        assert_eq!(result, expected_output);
-    }
-    #[test]
-    fn test_create_rust_idl() {
-        let public_inputs = vec![String::from("current_slot"), String::from("other_slot")];
-        let output = create_rust_idl(PUBLIC_INPUTS_INSTRUCTION_DATA_BASE, &public_inputs, "u256");
-
-        let expected_output = "#[allow(non_snake_case)]
-#[derive(Debug)]
-#[account]
-pub struct InstructionDataLightInstructionSecond {
-    pub current_slot: u256,
-    pub other_slot: u256,
-}";
-        assert_eq!(output, expected_output);
-    }
+    fn test_main() {}
 }

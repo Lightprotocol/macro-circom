@@ -1,21 +1,14 @@
 use crate::describe_error;
 use crate::errors::MacroCircomError;
-use crate::errors::MacroCircomError::*;
-use crate::{auto_generated_accounts_template::AUTO_GENERATED_ACCOUNTS_TEMPLATE, Instance};
-use anyhow::{anyhow, Error as AnyhowError};
 use heck::{ToLowerCamelCase, ToUpperCamelCase};
-use regex::Regex;
-use std::fmt::format;
-use std::ops::Deref;
-use std::string;
 
 fn generate_input_signal(input: &String) -> String {
     let mut output = String::new();
     output.push_str(&format!("signal input {};\n", input));
     output
 }
-#[derive(PartialEq, Debug, Clone)]
 
+#[derive(PartialEq, Debug, Clone)]
 pub enum Comparator {
     Equal,
     NotEqual,
@@ -37,6 +30,7 @@ impl Comparator {
         }
     }
 }
+
 #[derive(PartialEq, Debug, Clone)]
 pub struct CheckUtxo {
     pub code: String,
@@ -391,8 +385,6 @@ fn generate_equal_code(
 
 pub fn generate_check_utxo_code(
     contents: &String,
-    utxo_type: &String,
-    // instance: &Instance,
 ) -> Result<(String, Vec<CheckUtxo>), MacroCircomError> {
     // let mut checkedUtxos = Vec::<CheckUtxo>::new();
     let mut remaining_contents: String = contents.clone();
@@ -678,8 +670,7 @@ checkInAmountSolUtxoName[i] = ForceEqualIfEnabled();
                }
            }",
         );
-        let (remainingContent, checkedUtxos) =
-            generate_check_utxo_code(&contents, &String::from("In")).unwrap();
+        let (remainingContent, checkedUtxos) = generate_check_utxo_code(&contents).unwrap();
         let checkUtxo = checkedUtxos[0].clone();
         println!("code {}", checkUtxo.code);
         // assert_eq!(remainingContent, "}\n}");
@@ -754,8 +745,7 @@ checkInAmountSolUtxoName[i] = ForceEqualIfEnabled();
                }
            }",
         );
-        let (remainingContent, checkedUtxos) =
-            generate_check_utxo_code(&contents, &String::from("In")).unwrap();
+        let (remainingContent, checkedUtxos) = generate_check_utxo_code(&contents).unwrap();
         let checkUtxo = checkedUtxos[0].clone();
         assert_eq!(checkedUtxos.len(), 2);
         println!("code {}", checkUtxo.code);

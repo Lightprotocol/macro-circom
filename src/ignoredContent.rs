@@ -5,8 +5,8 @@ use super::*;
 extern crate lalrpop_util as __lalrpop_util;
 #[allow(unused_imports)]
 use self::__lalrpop_util::state_machine as __state_machine;
-extern crate core;
 extern crate alloc;
+extern crate core;
 
 #[rustfmt::skip]
 #[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens, clippy::all)]
@@ -1673,36 +1673,40 @@ pub(crate) use self::__lalrpop_util::lexer::Token;
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action0<
-    'input,
->(
+fn __action0<'input>(
     input: &'input str,
     (_, __0, _): (usize, Option<Vec<String>>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     __0
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action1<
-    'input,
->(
+fn __action1<'input>(
     input: &'input str,
     (_, s, _): (usize, core::option::Option<&'input str>, usize),
     (_, m, _): (usize, core::option::Option<&'input str>, usize),
     (_, p, _): (usize, core::option::Option<&'input str>, usize),
     (_, i, _): (usize, core::option::Option<&'input str>, usize),
     (_, t, _): (usize, core::option::Option<&'input str>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     {
         let mut v = Vec::new();
-        if let Some(s) = s { v.push(s.to_string()); }
-        if let Some(m) = m { v.push(m.to_string()); }
-        if let Some(p) = p { v.push(p.to_string()); }
-        if let Some(i) = i { v.push(i.to_string()); }
-        if let Some(t) = t { v.push(t.to_string()); }
+        if let Some(s) = s {
+            v.push(s.to_string());
+        }
+        if let Some(m) = m {
+            v.push(m.to_string());
+        }
+        if let Some(p) = p {
+            v.push(p.to_string());
+        }
+        if let Some(i) = i {
+            v.push(i.to_string());
+        }
+        if let Some(t) = t {
+            v.push(t.to_string());
+        }
         if v.is_empty() {
             None
         } else {
@@ -1713,1810 +1717,1038 @@ fn __action1<
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action2<
-    'input,
->(
+fn __action2<'input>(
     input: &'input str,
     (_, __0, _): (usize, &'input str, usize),
-) -> core::option::Option<&'input str>
-{
+) -> core::option::Option<&'input str> {
     Some(__0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action3<
-    'input,
->(
+fn __action3<'input>(
     input: &'input str,
     __lookbehind: &usize,
     __lookahead: &usize,
-) -> core::option::Option<&'input str>
-{
+) -> core::option::Option<&'input str> {
     None
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action4<
-    'input,
->(
+fn __action4<'input>(
     input: &'input str,
     (_, __0, _): (usize, &'input str, usize),
-) -> core::option::Option<&'input str>
-{
+) -> core::option::Option<&'input str> {
     Some(__0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action5<
-    'input,
->(
+fn __action5<'input>(
     input: &'input str,
     __lookbehind: &usize,
     __lookahead: &usize,
-) -> core::option::Option<&'input str>
-{
+) -> core::option::Option<&'input str> {
     None
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action6<
-    'input,
->(
+fn __action6<'input>(
     input: &'input str,
     (_, __0, _): (usize, &'input str, usize),
-) -> core::option::Option<&'input str>
-{
+) -> core::option::Option<&'input str> {
     Some(__0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action7<
-    'input,
->(
+fn __action7<'input>(
     input: &'input str,
     __lookbehind: &usize,
     __lookahead: &usize,
-) -> core::option::Option<&'input str>
-{
+) -> core::option::Option<&'input str> {
     None
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action8<
-    'input,
->(
+fn __action8<'input>(
     input: &'input str,
     (_, __0, _): (usize, &'input str, usize),
-) -> core::option::Option<&'input str>
-{
+) -> core::option::Option<&'input str> {
     Some(__0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action9<
-    'input,
->(
+fn __action9<'input>(
     input: &'input str,
     __lookbehind: &usize,
     __lookahead: &usize,
-) -> core::option::Option<&'input str>
-{
+) -> core::option::Option<&'input str> {
     None
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action10<
-    'input,
->(
+fn __action10<'input>(
     input: &'input str,
     (_, __0, _): (usize, &'input str, usize),
-) -> core::option::Option<&'input str>
-{
+) -> core::option::Option<&'input str> {
     Some(__0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action11<
-    'input,
->(
+fn __action11<'input>(
     input: &'input str,
     __lookbehind: &usize,
     __lookahead: &usize,
-) -> core::option::Option<&'input str>
-{
+) -> core::option::Option<&'input str> {
     None
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action12<
-    'input,
->(
+fn __action12<'input>(
     input: &'input str,
     __0: (usize, core::option::Option<&'input str>, usize),
     __1: (usize, core::option::Option<&'input str>, usize),
     __2: (usize, core::option::Option<&'input str>, usize),
     __3: (usize, &'input str, usize),
     __4: (usize, core::option::Option<&'input str>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __3.0;
     let __end0 = __3.2;
-    let __temp0 = __action4(
-        input,
-        __3,
-    );
+    let __temp0 = __action4(input, __3);
     let __temp0 = (__start0, __temp0, __end0);
-    __action1(
-        input,
-        __0,
-        __1,
-        __2,
-        __temp0,
-        __4,
-    )
+    __action1(input, __0, __1, __2, __temp0, __4)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action13<
-    'input,
->(
+fn __action13<'input>(
     input: &'input str,
     __0: (usize, core::option::Option<&'input str>, usize),
     __1: (usize, core::option::Option<&'input str>, usize),
     __2: (usize, core::option::Option<&'input str>, usize),
     __3: (usize, core::option::Option<&'input str>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __2.2;
     let __end0 = __3.0;
-    let __temp0 = __action5(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action5(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action1(
-        input,
-        __0,
-        __1,
-        __2,
-        __temp0,
-        __3,
-    )
+    __action1(input, __0, __1, __2, __temp0, __3)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action14<
-    'input,
->(
+fn __action14<'input>(
     input: &'input str,
     __0: (usize, core::option::Option<&'input str>, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, core::option::Option<&'input str>, usize),
     __3: (usize, &'input str, usize),
     __4: (usize, core::option::Option<&'input str>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __1.0;
     let __end0 = __1.2;
-    let __temp0 = __action8(
-        input,
-        __1,
-    );
+    let __temp0 = __action8(input, __1);
     let __temp0 = (__start0, __temp0, __end0);
-    __action12(
-        input,
-        __0,
-        __temp0,
-        __2,
-        __3,
-        __4,
-    )
+    __action12(input, __0, __temp0, __2, __3, __4)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action15<
-    'input,
->(
+fn __action15<'input>(
     input: &'input str,
     __0: (usize, core::option::Option<&'input str>, usize),
     __1: (usize, core::option::Option<&'input str>, usize),
     __2: (usize, &'input str, usize),
     __3: (usize, core::option::Option<&'input str>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __0.2;
     let __end0 = __1.0;
-    let __temp0 = __action9(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action9(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action12(
-        input,
-        __0,
-        __temp0,
-        __1,
-        __2,
-        __3,
-    )
+    __action12(input, __0, __temp0, __1, __2, __3)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action16<
-    'input,
->(
+fn __action16<'input>(
     input: &'input str,
     __0: (usize, core::option::Option<&'input str>, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, core::option::Option<&'input str>, usize),
     __3: (usize, core::option::Option<&'input str>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __1.0;
     let __end0 = __1.2;
-    let __temp0 = __action8(
-        input,
-        __1,
-    );
+    let __temp0 = __action8(input, __1);
     let __temp0 = (__start0, __temp0, __end0);
-    __action13(
-        input,
-        __0,
-        __temp0,
-        __2,
-        __3,
-    )
+    __action13(input, __0, __temp0, __2, __3)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action17<
-    'input,
->(
+fn __action17<'input>(
     input: &'input str,
     __0: (usize, core::option::Option<&'input str>, usize),
     __1: (usize, core::option::Option<&'input str>, usize),
     __2: (usize, core::option::Option<&'input str>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __0.2;
     let __end0 = __1.0;
-    let __temp0 = __action9(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action9(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action13(
-        input,
-        __0,
-        __temp0,
-        __1,
-        __2,
-    )
+    __action13(input, __0, __temp0, __1, __2)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action18<
-    'input,
->(
+fn __action18<'input>(
     input: &'input str,
     __0: (usize, core::option::Option<&'input str>, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, &'input str, usize),
     __3: (usize, &'input str, usize),
     __4: (usize, core::option::Option<&'input str>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __2.0;
     let __end0 = __2.2;
-    let __temp0 = __action6(
-        input,
-        __2,
-    );
+    let __temp0 = __action6(input, __2);
     let __temp0 = (__start0, __temp0, __end0);
-    __action14(
-        input,
-        __0,
-        __1,
-        __temp0,
-        __3,
-        __4,
-    )
+    __action14(input, __0, __1, __temp0, __3, __4)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action19<
-    'input,
->(
+fn __action19<'input>(
     input: &'input str,
     __0: (usize, core::option::Option<&'input str>, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, &'input str, usize),
     __3: (usize, core::option::Option<&'input str>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __1.2;
     let __end0 = __2.0;
-    let __temp0 = __action7(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action7(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action14(
-        input,
-        __0,
-        __1,
-        __temp0,
-        __2,
-        __3,
-    )
+    __action14(input, __0, __1, __temp0, __2, __3)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action20<
-    'input,
->(
+fn __action20<'input>(
     input: &'input str,
     __0: (usize, core::option::Option<&'input str>, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, &'input str, usize),
     __3: (usize, core::option::Option<&'input str>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __1.0;
     let __end0 = __1.2;
-    let __temp0 = __action6(
-        input,
-        __1,
-    );
+    let __temp0 = __action6(input, __1);
     let __temp0 = (__start0, __temp0, __end0);
-    __action15(
-        input,
-        __0,
-        __temp0,
-        __2,
-        __3,
-    )
+    __action15(input, __0, __temp0, __2, __3)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action21<
-    'input,
->(
+fn __action21<'input>(
     input: &'input str,
     __0: (usize, core::option::Option<&'input str>, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, core::option::Option<&'input str>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __0.2;
     let __end0 = __1.0;
-    let __temp0 = __action7(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action7(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action15(
-        input,
-        __0,
-        __temp0,
-        __1,
-        __2,
-    )
+    __action15(input, __0, __temp0, __1, __2)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action22<
-    'input,
->(
+fn __action22<'input>(
     input: &'input str,
     __0: (usize, core::option::Option<&'input str>, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, &'input str, usize),
     __3: (usize, core::option::Option<&'input str>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __2.0;
     let __end0 = __2.2;
-    let __temp0 = __action6(
-        input,
-        __2,
-    );
+    let __temp0 = __action6(input, __2);
     let __temp0 = (__start0, __temp0, __end0);
-    __action16(
-        input,
-        __0,
-        __1,
-        __temp0,
-        __3,
-    )
+    __action16(input, __0, __1, __temp0, __3)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action23<
-    'input,
->(
+fn __action23<'input>(
     input: &'input str,
     __0: (usize, core::option::Option<&'input str>, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, core::option::Option<&'input str>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __1.2;
     let __end0 = __2.0;
-    let __temp0 = __action7(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action7(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action16(
-        input,
-        __0,
-        __1,
-        __temp0,
-        __2,
-    )
+    __action16(input, __0, __1, __temp0, __2)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action24<
-    'input,
->(
+fn __action24<'input>(
     input: &'input str,
     __0: (usize, core::option::Option<&'input str>, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, core::option::Option<&'input str>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __1.0;
     let __end0 = __1.2;
-    let __temp0 = __action6(
-        input,
-        __1,
-    );
+    let __temp0 = __action6(input, __1);
     let __temp0 = (__start0, __temp0, __end0);
-    __action17(
-        input,
-        __0,
-        __temp0,
-        __2,
-    )
+    __action17(input, __0, __temp0, __2)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action25<
-    'input,
->(
+fn __action25<'input>(
     input: &'input str,
     __0: (usize, core::option::Option<&'input str>, usize),
     __1: (usize, core::option::Option<&'input str>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __0.2;
     let __end0 = __1.0;
-    let __temp0 = __action7(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action7(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action17(
-        input,
-        __0,
-        __temp0,
-        __1,
-    )
+    __action17(input, __0, __temp0, __1)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action26<
-    'input,
->(
+fn __action26<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, &'input str, usize),
     __3: (usize, &'input str, usize),
     __4: (usize, core::option::Option<&'input str>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __0.0;
     let __end0 = __0.2;
-    let __temp0 = __action10(
-        input,
-        __0,
-    );
+    let __temp0 = __action10(input, __0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action18(
-        input,
-        __temp0,
-        __1,
-        __2,
-        __3,
-        __4,
-    )
+    __action18(input, __temp0, __1, __2, __3, __4)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action27<
-    'input,
->(
+fn __action27<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, &'input str, usize),
     __3: (usize, core::option::Option<&'input str>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __0.0;
     let __end0 = __0.0;
-    let __temp0 = __action11(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action11(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action18(
-        input,
-        __temp0,
-        __0,
-        __1,
-        __2,
-        __3,
-    )
+    __action18(input, __temp0, __0, __1, __2, __3)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action28<
-    'input,
->(
+fn __action28<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, &'input str, usize),
     __3: (usize, core::option::Option<&'input str>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __0.0;
     let __end0 = __0.2;
-    let __temp0 = __action10(
-        input,
-        __0,
-    );
+    let __temp0 = __action10(input, __0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action19(
-        input,
-        __temp0,
-        __1,
-        __2,
-        __3,
-    )
+    __action19(input, __temp0, __1, __2, __3)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action29<
-    'input,
->(
+fn __action29<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, core::option::Option<&'input str>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __0.0;
     let __end0 = __0.0;
-    let __temp0 = __action11(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action11(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action19(
-        input,
-        __temp0,
-        __0,
-        __1,
-        __2,
-    )
+    __action19(input, __temp0, __0, __1, __2)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action30<
-    'input,
->(
+fn __action30<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, &'input str, usize),
     __3: (usize, core::option::Option<&'input str>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __0.0;
     let __end0 = __0.2;
-    let __temp0 = __action10(
-        input,
-        __0,
-    );
+    let __temp0 = __action10(input, __0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action20(
-        input,
-        __temp0,
-        __1,
-        __2,
-        __3,
-    )
+    __action20(input, __temp0, __1, __2, __3)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action31<
-    'input,
->(
+fn __action31<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, core::option::Option<&'input str>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __0.0;
     let __end0 = __0.0;
-    let __temp0 = __action11(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action11(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action20(
-        input,
-        __temp0,
-        __0,
-        __1,
-        __2,
-    )
+    __action20(input, __temp0, __0, __1, __2)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action32<
-    'input,
->(
+fn __action32<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, core::option::Option<&'input str>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __0.0;
     let __end0 = __0.2;
-    let __temp0 = __action10(
-        input,
-        __0,
-    );
+    let __temp0 = __action10(input, __0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action21(
-        input,
-        __temp0,
-        __1,
-        __2,
-    )
+    __action21(input, __temp0, __1, __2)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action33<
-    'input,
->(
+fn __action33<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, core::option::Option<&'input str>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __0.0;
     let __end0 = __0.0;
-    let __temp0 = __action11(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action11(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action21(
-        input,
-        __temp0,
-        __0,
-        __1,
-    )
+    __action21(input, __temp0, __0, __1)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action34<
-    'input,
->(
+fn __action34<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, &'input str, usize),
     __3: (usize, core::option::Option<&'input str>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __0.0;
     let __end0 = __0.2;
-    let __temp0 = __action10(
-        input,
-        __0,
-    );
+    let __temp0 = __action10(input, __0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action22(
-        input,
-        __temp0,
-        __1,
-        __2,
-        __3,
-    )
+    __action22(input, __temp0, __1, __2, __3)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action35<
-    'input,
->(
+fn __action35<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, core::option::Option<&'input str>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __0.0;
     let __end0 = __0.0;
-    let __temp0 = __action11(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action11(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action22(
-        input,
-        __temp0,
-        __0,
-        __1,
-        __2,
-    )
+    __action22(input, __temp0, __0, __1, __2)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action36<
-    'input,
->(
+fn __action36<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, core::option::Option<&'input str>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __0.0;
     let __end0 = __0.2;
-    let __temp0 = __action10(
-        input,
-        __0,
-    );
+    let __temp0 = __action10(input, __0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action23(
-        input,
-        __temp0,
-        __1,
-        __2,
-    )
+    __action23(input, __temp0, __1, __2)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action37<
-    'input,
->(
+fn __action37<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, core::option::Option<&'input str>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __0.0;
     let __end0 = __0.0;
-    let __temp0 = __action11(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action11(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action23(
-        input,
-        __temp0,
-        __0,
-        __1,
-    )
+    __action23(input, __temp0, __0, __1)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action38<
-    'input,
->(
+fn __action38<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, core::option::Option<&'input str>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __0.0;
     let __end0 = __0.2;
-    let __temp0 = __action10(
-        input,
-        __0,
-    );
+    let __temp0 = __action10(input, __0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action24(
-        input,
-        __temp0,
-        __1,
-        __2,
-    )
+    __action24(input, __temp0, __1, __2)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action39<
-    'input,
->(
+fn __action39<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, core::option::Option<&'input str>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __0.0;
     let __end0 = __0.0;
-    let __temp0 = __action11(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action11(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action24(
-        input,
-        __temp0,
-        __0,
-        __1,
-    )
+    __action24(input, __temp0, __0, __1)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action40<
-    'input,
->(
+fn __action40<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, core::option::Option<&'input str>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __0.0;
     let __end0 = __0.2;
-    let __temp0 = __action10(
-        input,
-        __0,
-    );
+    let __temp0 = __action10(input, __0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action25(
-        input,
-        __temp0,
-        __1,
-    )
+    __action25(input, __temp0, __1)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action41<
-    'input,
->(
+fn __action41<'input>(
     input: &'input str,
     __0: (usize, core::option::Option<&'input str>, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __0.0;
     let __end0 = __0.0;
-    let __temp0 = __action11(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action11(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action25(
-        input,
-        __temp0,
-        __0,
-    )
+    __action25(input, __temp0, __0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action42<
-    'input,
->(
+fn __action42<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, &'input str, usize),
     __3: (usize, &'input str, usize),
     __4: (usize, &'input str, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __4.0;
     let __end0 = __4.2;
-    let __temp0 = __action2(
-        input,
-        __4,
-    );
+    let __temp0 = __action2(input, __4);
     let __temp0 = (__start0, __temp0, __end0);
-    __action26(
-        input,
-        __0,
-        __1,
-        __2,
-        __3,
-        __temp0,
-    )
+    __action26(input, __0, __1, __2, __3, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action43<
-    'input,
->(
+fn __action43<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, &'input str, usize),
     __3: (usize, &'input str, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __3.2;
     let __end0 = __3.2;
-    let __temp0 = __action3(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action3(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action26(
-        input,
-        __0,
-        __1,
-        __2,
-        __3,
-        __temp0,
-    )
+    __action26(input, __0, __1, __2, __3, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action44<
-    'input,
->(
+fn __action44<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, &'input str, usize),
     __3: (usize, &'input str, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __3.0;
     let __end0 = __3.2;
-    let __temp0 = __action2(
-        input,
-        __3,
-    );
+    let __temp0 = __action2(input, __3);
     let __temp0 = (__start0, __temp0, __end0);
-    __action27(
-        input,
-        __0,
-        __1,
-        __2,
-        __temp0,
-    )
+    __action27(input, __0, __1, __2, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action45<
-    'input,
->(
+fn __action45<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, &'input str, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __2.2;
     let __end0 = __2.2;
-    let __temp0 = __action3(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action3(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action27(
-        input,
-        __0,
-        __1,
-        __2,
-        __temp0,
-    )
+    __action27(input, __0, __1, __2, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action46<
-    'input,
->(
+fn __action46<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, &'input str, usize),
     __3: (usize, &'input str, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __3.0;
     let __end0 = __3.2;
-    let __temp0 = __action2(
-        input,
-        __3,
-    );
+    let __temp0 = __action2(input, __3);
     let __temp0 = (__start0, __temp0, __end0);
-    __action28(
-        input,
-        __0,
-        __1,
-        __2,
-        __temp0,
-    )
+    __action28(input, __0, __1, __2, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action47<
-    'input,
->(
+fn __action47<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, &'input str, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __2.2;
     let __end0 = __2.2;
-    let __temp0 = __action3(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action3(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action28(
-        input,
-        __0,
-        __1,
-        __2,
-        __temp0,
-    )
+    __action28(input, __0, __1, __2, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action48<
-    'input,
->(
+fn __action48<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, &'input str, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __2.0;
     let __end0 = __2.2;
-    let __temp0 = __action2(
-        input,
-        __2,
-    );
+    let __temp0 = __action2(input, __2);
     let __temp0 = (__start0, __temp0, __end0);
-    __action29(
-        input,
-        __0,
-        __1,
-        __temp0,
-    )
+    __action29(input, __0, __1, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action49<
-    'input,
->(
+fn __action49<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __1.2;
     let __end0 = __1.2;
-    let __temp0 = __action3(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action3(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action29(
-        input,
-        __0,
-        __1,
-        __temp0,
-    )
+    __action29(input, __0, __1, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action50<
-    'input,
->(
+fn __action50<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, &'input str, usize),
     __3: (usize, &'input str, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __3.0;
     let __end0 = __3.2;
-    let __temp0 = __action2(
-        input,
-        __3,
-    );
+    let __temp0 = __action2(input, __3);
     let __temp0 = (__start0, __temp0, __end0);
-    __action30(
-        input,
-        __0,
-        __1,
-        __2,
-        __temp0,
-    )
+    __action30(input, __0, __1, __2, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action51<
-    'input,
->(
+fn __action51<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, &'input str, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __2.2;
     let __end0 = __2.2;
-    let __temp0 = __action3(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action3(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action30(
-        input,
-        __0,
-        __1,
-        __2,
-        __temp0,
-    )
+    __action30(input, __0, __1, __2, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action52<
-    'input,
->(
+fn __action52<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, &'input str, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __2.0;
     let __end0 = __2.2;
-    let __temp0 = __action2(
-        input,
-        __2,
-    );
+    let __temp0 = __action2(input, __2);
     let __temp0 = (__start0, __temp0, __end0);
-    __action31(
-        input,
-        __0,
-        __1,
-        __temp0,
-    )
+    __action31(input, __0, __1, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action53<
-    'input,
->(
+fn __action53<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __1.2;
     let __end0 = __1.2;
-    let __temp0 = __action3(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action3(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action31(
-        input,
-        __0,
-        __1,
-        __temp0,
-    )
+    __action31(input, __0, __1, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action54<
-    'input,
->(
+fn __action54<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, &'input str, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __2.0;
     let __end0 = __2.2;
-    let __temp0 = __action2(
-        input,
-        __2,
-    );
+    let __temp0 = __action2(input, __2);
     let __temp0 = (__start0, __temp0, __end0);
-    __action32(
-        input,
-        __0,
-        __1,
-        __temp0,
-    )
+    __action32(input, __0, __1, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action55<
-    'input,
->(
+fn __action55<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __1.2;
     let __end0 = __1.2;
-    let __temp0 = __action3(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action3(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action32(
-        input,
-        __0,
-        __1,
-        __temp0,
-    )
+    __action32(input, __0, __1, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action56<
-    'input,
->(
+fn __action56<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __1.0;
     let __end0 = __1.2;
-    let __temp0 = __action2(
-        input,
-        __1,
-    );
+    let __temp0 = __action2(input, __1);
     let __temp0 = (__start0, __temp0, __end0);
-    __action33(
-        input,
-        __0,
-        __temp0,
-    )
+    __action33(input, __0, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action57<
-    'input,
->(
-    input: &'input str,
-    __0: (usize, &'input str, usize),
-) -> Option<Vec<String>>
-{
+fn __action57<'input>(input: &'input str, __0: (usize, &'input str, usize)) -> Option<Vec<String>> {
     let __start0 = __0.2;
     let __end0 = __0.2;
-    let __temp0 = __action3(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action3(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action33(
-        input,
-        __0,
-        __temp0,
-    )
+    __action33(input, __0, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action58<
-    'input,
->(
+fn __action58<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, &'input str, usize),
     __3: (usize, &'input str, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __3.0;
     let __end0 = __3.2;
-    let __temp0 = __action2(
-        input,
-        __3,
-    );
+    let __temp0 = __action2(input, __3);
     let __temp0 = (__start0, __temp0, __end0);
-    __action34(
-        input,
-        __0,
-        __1,
-        __2,
-        __temp0,
-    )
+    __action34(input, __0, __1, __2, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action59<
-    'input,
->(
+fn __action59<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, &'input str, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __2.2;
     let __end0 = __2.2;
-    let __temp0 = __action3(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action3(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action34(
-        input,
-        __0,
-        __1,
-        __2,
-        __temp0,
-    )
+    __action34(input, __0, __1, __2, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action60<
-    'input,
->(
+fn __action60<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, &'input str, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __2.0;
     let __end0 = __2.2;
-    let __temp0 = __action2(
-        input,
-        __2,
-    );
+    let __temp0 = __action2(input, __2);
     let __temp0 = (__start0, __temp0, __end0);
-    __action35(
-        input,
-        __0,
-        __1,
-        __temp0,
-    )
+    __action35(input, __0, __1, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action61<
-    'input,
->(
+fn __action61<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __1.2;
     let __end0 = __1.2;
-    let __temp0 = __action3(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action3(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action35(
-        input,
-        __0,
-        __1,
-        __temp0,
-    )
+    __action35(input, __0, __1, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action62<
-    'input,
->(
+fn __action62<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, &'input str, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __2.0;
     let __end0 = __2.2;
-    let __temp0 = __action2(
-        input,
-        __2,
-    );
+    let __temp0 = __action2(input, __2);
     let __temp0 = (__start0, __temp0, __end0);
-    __action36(
-        input,
-        __0,
-        __1,
-        __temp0,
-    )
+    __action36(input, __0, __1, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action63<
-    'input,
->(
+fn __action63<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __1.2;
     let __end0 = __1.2;
-    let __temp0 = __action3(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action3(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action36(
-        input,
-        __0,
-        __1,
-        __temp0,
-    )
+    __action36(input, __0, __1, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action64<
-    'input,
->(
+fn __action64<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __1.0;
     let __end0 = __1.2;
-    let __temp0 = __action2(
-        input,
-        __1,
-    );
+    let __temp0 = __action2(input, __1);
     let __temp0 = (__start0, __temp0, __end0);
-    __action37(
-        input,
-        __0,
-        __temp0,
-    )
+    __action37(input, __0, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action65<
-    'input,
->(
-    input: &'input str,
-    __0: (usize, &'input str, usize),
-) -> Option<Vec<String>>
-{
+fn __action65<'input>(input: &'input str, __0: (usize, &'input str, usize)) -> Option<Vec<String>> {
     let __start0 = __0.2;
     let __end0 = __0.2;
-    let __temp0 = __action3(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action3(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action37(
-        input,
-        __0,
-        __temp0,
-    )
+    __action37(input, __0, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action66<
-    'input,
->(
+fn __action66<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
     __2: (usize, &'input str, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __2.0;
     let __end0 = __2.2;
-    let __temp0 = __action2(
-        input,
-        __2,
-    );
+    let __temp0 = __action2(input, __2);
     let __temp0 = (__start0, __temp0, __end0);
-    __action38(
-        input,
-        __0,
-        __1,
-        __temp0,
-    )
+    __action38(input, __0, __1, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action67<
-    'input,
->(
+fn __action67<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __1.2;
     let __end0 = __1.2;
-    let __temp0 = __action3(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action3(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action38(
-        input,
-        __0,
-        __1,
-        __temp0,
-    )
+    __action38(input, __0, __1, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action68<
-    'input,
->(
+fn __action68<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __1.0;
     let __end0 = __1.2;
-    let __temp0 = __action2(
-        input,
-        __1,
-    );
+    let __temp0 = __action2(input, __1);
     let __temp0 = (__start0, __temp0, __end0);
-    __action39(
-        input,
-        __0,
-        __temp0,
-    )
+    __action39(input, __0, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action69<
-    'input,
->(
-    input: &'input str,
-    __0: (usize, &'input str, usize),
-) -> Option<Vec<String>>
-{
+fn __action69<'input>(input: &'input str, __0: (usize, &'input str, usize)) -> Option<Vec<String>> {
     let __start0 = __0.2;
     let __end0 = __0.2;
-    let __temp0 = __action3(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action3(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action39(
-        input,
-        __0,
-        __temp0,
-    )
+    __action39(input, __0, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action70<
-    'input,
->(
+fn __action70<'input>(
     input: &'input str,
     __0: (usize, &'input str, usize),
     __1: (usize, &'input str, usize),
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = __1.0;
     let __end0 = __1.2;
-    let __temp0 = __action2(
-        input,
-        __1,
-    );
+    let __temp0 = __action2(input, __1);
     let __temp0 = (__start0, __temp0, __end0);
-    __action40(
-        input,
-        __0,
-        __temp0,
-    )
+    __action40(input, __0, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action71<
-    'input,
->(
-    input: &'input str,
-    __0: (usize, &'input str, usize),
-) -> Option<Vec<String>>
-{
+fn __action71<'input>(input: &'input str, __0: (usize, &'input str, usize)) -> Option<Vec<String>> {
     let __start0 = __0.2;
     let __end0 = __0.2;
-    let __temp0 = __action3(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action3(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action40(
-        input,
-        __0,
-        __temp0,
-    )
+    __action40(input, __0, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action72<
-    'input,
->(
-    input: &'input str,
-    __0: (usize, &'input str, usize),
-) -> Option<Vec<String>>
-{
+fn __action72<'input>(input: &'input str, __0: (usize, &'input str, usize)) -> Option<Vec<String>> {
     let __start0 = __0.0;
     let __end0 = __0.2;
-    let __temp0 = __action2(
-        input,
-        __0,
-    );
+    let __temp0 = __action2(input, __0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action41(
-        input,
-        __temp0,
-    )
+    __action41(input, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action73<
-    'input,
->(
+fn __action73<'input>(
     input: &'input str,
     __lookbehind: &usize,
     __lookahead: &usize,
-) -> Option<Vec<String>>
-{
+) -> Option<Vec<String>> {
     let __start0 = *__lookbehind;
     let __end0 = *__lookahead;
-    let __temp0 = __action3(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action3(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action41(
-        input,
-        __temp0,
-    )
+    __action41(input, __temp0)
 }
 #[allow(clippy::type_complexity)]
 
-pub trait __ToTriple<'input, >
-{
-    fn to_triple(value: Self) -> Result<(usize,Token<'input>,usize), __lalrpop_util::ParseError<usize, Token<'input>, &'static str>>;
+pub trait __ToTriple<'input> {
+    fn to_triple(
+        value: Self,
+    ) -> Result<
+        (usize, Token<'input>, usize),
+        __lalrpop_util::ParseError<usize, Token<'input>, &'static str>,
+    >;
 }
 
-impl<'input, > __ToTriple<'input, > for (usize, Token<'input>, usize)
-{
-    fn to_triple(value: Self) -> Result<(usize,Token<'input>,usize), __lalrpop_util::ParseError<usize, Token<'input>, &'static str>> {
+impl<'input> __ToTriple<'input> for (usize, Token<'input>, usize) {
+    fn to_triple(
+        value: Self,
+    ) -> Result<
+        (usize, Token<'input>, usize),
+        __lalrpop_util::ParseError<usize, Token<'input>, &'static str>,
+    > {
         Ok(value)
     }
 }
-impl<'input, > __ToTriple<'input, > for Result<(usize, Token<'input>, usize), &'static str>
-{
-    fn to_triple(value: Self) -> Result<(usize,Token<'input>,usize), __lalrpop_util::ParseError<usize, Token<'input>, &'static str>> {
+impl<'input> __ToTriple<'input> for Result<(usize, Token<'input>, usize), &'static str> {
+    fn to_triple(
+        value: Self,
+    ) -> Result<
+        (usize, Token<'input>, usize),
+        __lalrpop_util::ParseError<usize, Token<'input>, &'static str>,
+    > {
         match value {
             Ok(v) => Ok(v),
             Err(error) => Err(__lalrpop_util::ParseError::User { error }),
