@@ -106,6 +106,10 @@ match {
     r"-?[a-zA-Z_0-9]+" => STRING
 }
 
+pub CheckUtxos: Vec<CheckUtxo> = {
+    <utxos: CheckUtxoType*> => utxos
+};
+
 pub CheckUtxoType: CheckUtxo = {
     "#[checkInUtxo(" <name:STRING> "," <no_utxos:STRING> "," <instruction:STRING> ")]" <fields:CheckUtxoFields> => {
         CheckUtxo {

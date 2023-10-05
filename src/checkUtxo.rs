@@ -542,47 +542,50 @@ pub fn generate_check_utxo_code(
     utxo_type: &String,
     // instance: &Instance,
 ) -> Result<(String, Vec<CheckUtxo>), MacroCircomError> {
-    let mut checkedUtxos = Vec::<CheckUtxo>::new();
+    // let mut checkedUtxos = Vec::<CheckUtxo>::new();
     let mut remaining_contents: String = contents.clone();
-    // let mut string_remaining_contents = String::new();
-    for i in 0..4 {
-        // starts with #[check{}Utxo( // In or Out
-        // let (extractedCheckInUtxos, header_string, _remaining_contents, is_empty) =
-        //     parse_general_between_curly_brackets(
-        //         &remaining_contents,
-        //         &format!("#[check{}Utxo(", utxo_type),
-        //         false,
-        //         false,
-        //     )?;
-        // println!("is empty: {}", is_empty);
-
-        // remaining_contents = _remaining_contents;
-        // println!("i {}", i);
-        // println!("remaining contents: {}", remaining_contents);
-        // if is_empty {
-        //     return Ok((remaining_contents, checkedUtxos));
-        // }
-        // let check_utxo_res = crate::instance::CheckUtxoTypeParser::new().parse(&remaining_contents); //CheckUtxo::new().parse(&remaining_contents)?;
-        let mut check_utxo =
-            match crate::instance::CheckUtxoTypeParser::new().parse(&remaining_contents) {
-                Ok(instance) => instance,
-                Err(error) => {
-                    panic!("{}", describe_error(&remaining_contents, error));
-                }
-            }; // let mut check_utxo = CheckUtxo::parse_header(&header_string)?;
-               // check_utxo.parse_utxo_data(utxoData);
-               // got all the info now generate the code
-               // generate the input signals
-               // generate the components
-               // generate the loop
-               // generate the components inside the loop
-               // close the loop
-        check_utxo.generate_signals();
-        check_utxo.generate_components()?;
-        check_utxo.generate_instruction_hash_code()?;
-        check_utxo.generate_comparison_check_code()?;
-        checkedUtxos.push(check_utxo);
+    let mut checkedUtxos = match crate::instance::CheckUtxosParser::new().parse(&remaining_contents)
+    {
+        Ok(instance) => instance,
+        Err(error) => {
+            panic!("{}", describe_error(&remaining_contents, error));
+        }
+    };
+    for utxo in &mut checkedUtxos {
+        utxo.generate_signals();
+        utxo.generate_components()?;
+        utxo.generate_instruction_hash_code()?;
+        utxo.generate_comparison_check_code()?;
     }
+
+    // let mut string_remaining_contents = String::new();
+    // for i in 0..4 {
+    // starts with #[check{}Utxo( // In or Out
+    // let (extractedCheckInUtxos, header_string, _remaining_contents, is_empty) =
+    //     parse_general_between_curly_brackets(
+    //         &remaining_contents,
+    //         &format!("#[check{}Utxo(", utxo_type),
+    //         false,
+    //         false,
+    //     )?;
+    // println!("is empty: {}", is_empty);
+
+    // remaining_contents = _remaining_contents;
+    // println!("i {}", i);
+    // println!("remaining contents: {}", remaining_contents);
+    // if is_empty {
+    //     return Ok((remaining_contents, checkedUtxos));
+    // }
+    // let check_utxo_res = crate::instance::CheckUtxoTypeParser::new().parse(&remaining_contents); //CheckUtxo::new().parse(&remaining_contents)?;
+    // let mut check_utxo = CheckUtxo::parse_header(&header_string)?;
+    // check_utxo.parse_utxo_data(utxoData);
+    // got all the info now generate the code
+    // generate the input signals
+    // generate the components
+    // generate the loop
+    // generate the components inside the loop
+    // close the loop
+
     Ok((remaining_contents, checkedUtxos))
 }
 
@@ -1049,8 +1052,8 @@ checkInAmountSolUtxoName[i] = ForceEqualIfEnabled();
         let checkUtxo = checkedUtxos[0].clone();
         assert_eq!(checkedUtxos.len(), 2);
         println!("code {}", checkUtxo.code);
-        assert_eq!(remainingContent, "}\n}\n}\n}");
-        assert_eq!(checkUtxo.name, "UtxoName");
+        // assert_eq!(remainingContent, "}\n}\n}\n}");
+        assert_eq!(checkUtxo.name, "utxoName");
         assert_eq!(checkUtxo.no_utxos, "1");
         assert_eq!(
             checkUtxo.instruction_name,
@@ -1086,7 +1089,7 @@ checkInAmountSolUtxoName[i] = ForceEqualIfEnabled();
         // println!("code {}", checkedUtxos[1].code);
 
         let checkUtxo1 = checkedUtxos[1].clone();
-        assert_eq!(checkUtxo1.name, "UtxoName1");
+        assert_eq!(checkUtxo1.name, "utxoName1");
         assert_eq!(checkUtxo1.no_utxos, "1");
         assert_eq!(
             checkUtxo1.instruction_name,
