@@ -398,7 +398,8 @@ dependencies = [
  "lalrpop-util",
  "quote",
  "regex",
- "syn",
+ "serde_json",
+ "syn 1.0.109",
  "thiserror",
 ]
 
@@ -474,7 +475,7 @@ dependencies = [
  "pest_meta",
  "proc-macro2",
  "quote",
- "syn",
+ "syn 2.0.37",
 ]
 
 [[package]]
@@ -675,6 +676,17 @@ checksum = "8ea5119cdb4c55b55d432abb513a0429384878c15dde60cc77b1c99de1a95a6a"
 
 [[package]]
 name = "syn"
+version = "1.0.109"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72b64191b275b66ffe2469e8af2c1cfe3bafa67b529ead792a6d0160888b4237"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "unicode-ident",
+]
+
+[[package]]
+name = "syn"
 version = "2.0.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7303ef2c05cd654186cb250d29049a24840ca25d2747c25c0381c8d9e2f582e8"
@@ -721,7 +733,7 @@ checksum = "f9456a42c5b0d803c8cd86e73dd7cc9edd429499f37a3550d286d5e86720569f"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn",
+ "syn 2.0.37",
 ]
 
 [[package]]

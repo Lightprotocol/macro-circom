@@ -1,9 +1,11 @@
 pub mod checkUtxo;
-pub use checkUtxo::*;
 pub mod code_gen;
 pub mod connecting_hash_circom;
 pub mod errors;
 pub mod ignoredContent;
+pub mod instance;
+pub use checkUtxo::*;
+
 use crate::checkUtxo::generate_check_utxo_code;
 use crate::errors::MacroCircomError;
 use crate::{
@@ -20,7 +22,6 @@ use std::{
     process::{Command, Stdio},
     thread::spawn,
 };
-mod instance;
 
 use clap::{App, Arg};
 

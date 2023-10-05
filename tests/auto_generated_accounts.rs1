@@ -1,0 +1,60 @@
+extern crate macro_circom;
+use macro_circom::code_gen::auto_generated_accounts::create_rust_idl;
+#[cfg(test)]
+mod auto_generated_accounts_tests {
+    use quote::ToTokens;
+    use syn::Item;
+    /// Asserts that two Rust code strings are equivalent by parsing them with `syn` and comparing the token streams.
+    fn assert_syn_eq(output: &str, expected_output: &str) {
+        let parsed_output: Item = syn::parse_str(output).expect("Failed to parse output");
+        let parsed_expected: Item =
+            syn::parse_str(expected_output).expect("Failed to parse expected output");
+
+        let output_tokens = parsed_output.into_token_stream().to_string();
+        let expected_tokens = parsed_expected.into_token_stream().to_string();
+
+        assert_eq!(output_tokens, expected_tokens);
+    }
+
+    #[test]
+    fn test_create_utxo_rust_idl_success() {
+        let public_inputs = vec![String::from("release_slot"), String::from("other_slot")];
+        let result = create_rust_idl(UTXO_STRUCT_TEMPLATE, &public_inputs, "u256");
+
+        let expected_output = "#[allow(non_snake_case)]
+            #[derive(Debug, Copy, PartialEq)]
+            #[account]
+            pub struct Utxo {
+            pub amounts: [u64; 2],
+            pub spl_asset_index: u64,
+            pub verifier_address_index: u64,
+            pub blinding: u256,
+            pub app_data_hash: u256,
+            pub account_shielded_public_key: u256,
+            pub account_encryption_public_key: [u8; 32],
+            pub release_slot: u256,
+            pub other_slot: u256,
+            }";
+
+        assert_syn_eq(result.as_str(), expected_output);
+    }
+
+    #[test]
+    fn test_create_rust_idl() {
+        let public_inputs = vec![String::from("current_slot"), String::from("other_slot")];
+        let output = create_rust_idl(
+            PUBLIC_INPUTS_INSTRUCTION_DATA_TEMPLATE,
+            &public_inputs,
+            "u256",
+        );
+
+        let expected_output = "#[allow(non_snake_case)]
+            #[derive(Debug)]
+            #[account]
+            pub struct InstructionDataLightInstructionSecond {
+            pub current_slot: [u8;32],
+            pub other_slot: [u8;32],
+        }";
+        assert_syn_eq(output.as_str(), expected_output);
+    }
+}
