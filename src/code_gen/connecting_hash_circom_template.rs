@@ -4,7 +4,6 @@ pub const CONNECTING_HASH_VERIFIER_TWO: &str = "
     assert( nInAssets <= nAssets);
     assert( nOutAssets <= nAssets);
 
-    signal input isAppInUtxo[nAppUtxos][nIns];
     signal input txIntegrityHash;
     signal input  inAmount[nIns][nInAssets];
     signal input  inPublicKey[nIns];

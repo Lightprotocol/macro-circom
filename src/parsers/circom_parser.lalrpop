@@ -1,7 +1,7 @@
 grammar;
 
 pub CircomCode: Vec<String> = {
-    <utxos: STRING*> => utxos.into_iter().map(ToString::to_string).collect()
+    <token: STRING*> => token.into_iter().map(ToString::to_string).collect()
 };
 
 

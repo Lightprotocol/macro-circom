@@ -1,4 +1,3 @@
-use crate::describe_error;
 use crate::errors::MacroCircomError;
 use heck::{ToLowerCamelCase, ToUpperCamelCase};
 
@@ -91,6 +90,14 @@ impl CheckUtxo {
     pub fn generate_signals(&mut self) {
         // generate the signals
         // only utxo data inputs need signals
+        self.code.push_str(
+            format!(
+                "signal input is{utxo_type}AppUtxo{name}[n{utxo_type}s];\n",
+                utxo_type = if self.is_in_utxo { "In" } else { "Out" },
+                name = self.name.to_upper_camel_case()
+            )
+            .as_str(),
+        );
         if self.utxo_data.is_some() {
             for utxo in self.utxo_data.as_ref().unwrap() {
                 self.code.push_str(generate_input_signal(&utxo.0).as_str());
@@ -184,7 +191,9 @@ component checkInstructionHash[{}][{}];\n",
                     format!(
                         "component instructionHasher{};
 component checkInstructionHash{}[{}];\n",
-                        self.name, self.name, utxo_type
+                        self.name.to_upper_camel_case(),
+                        self.name.to_upper_camel_case(),
+                        utxo_type
                     )
                     .as_str(),
                 );
@@ -389,32 +398,21 @@ fn generate_equal_code(
     )
 }
 
-pub fn generate_check_utxo_code(
-    contents: &String,
-) -> Result<(String, Vec<CheckUtxo>), MacroCircomError> {
-    // let mut checked_utxo = Vec::<CheckUtxo>::new();
-    let remaining_contents: String = contents.clone();
-    let mut checked_utxo =
-        match crate::macro_parser::CheckUtxosParser::new().parse(&remaining_contents) {
-            Ok(instance) => instance,
-            Err(error) => {
-                panic!("{}", describe_error(&remaining_contents, error));
-            }
-        };
+pub fn generate_check_utxo_code(checked_utxo: &mut Vec<CheckUtxo>) -> Result<(), MacroCircomError> {
     // got all the info now generate the code
     // generate the input signals
     // generate the components
     // generate the loop
     // generate the components inside the loop
     // close the loop
-    for utxo in &mut checked_utxo {
+    for utxo in checked_utxo {
         utxo.generate_signals();
         utxo.generate_components()?;
         utxo.generate_instruction_hash_code()?;
         utxo.generate_comparison_check_code()?;
     }
 
-    Ok((remaining_contents, checked_utxo))
+    Ok(())
 }
 
 // TODO:
@@ -426,6 +424,8 @@ pub fn generate_check_utxo_code(
 // - test in voting
 
 mod tests {
+    use crate::describe_error;
+
     #[allow(unused_imports)]
     use super::*;
     #[allow(unused_imports)]
@@ -502,7 +502,7 @@ mod tests {
 
         // Expected code output
         let expected_output = format!(
-            "{}{}",
+            "signal input isOutAppUtxoUtxoName[nOuts];\n{}{}",
             generate_input_signal(&String::from("attribute1")),
             generate_input_signal(&String::from("attribute2"))
         );
@@ -677,8 +677,20 @@ checkInAmountSolUtxoName[i] = ForceEqualIfEnabled();
                }
            }",
         );
-        let (_, checked_utxo) = generate_check_utxo_code(&contents).unwrap();
-        let check_utxo = checked_utxo[0].clone();
+        let parsing_res = match crate::macro_parser::LightFileParser::new().parse(&contents) {
+            Ok(instance) => instance,
+            Err(error) => {
+                println!("Parsing check utxo error.");
+                panic!("{}", describe_error(&contents, error));
+            }
+        };
+
+        let mut checked_utxos = match parsing_res.1 {
+            Some(checked_utxos) => checked_utxos,
+            None => Vec::<CheckUtxo>::new(),
+        };
+        generate_check_utxo_code(&mut checked_utxos).unwrap();
+        let check_utxo = checked_utxos[0].clone();
         println!("code {}", check_utxo.code);
         assert_eq!(check_utxo.name, "utxoName");
         assert_eq!(check_utxo.no_utxos, "1");
@@ -751,9 +763,21 @@ checkInAmountSolUtxoName[i] = ForceEqualIfEnabled();
                }
            }",
         );
-        let (_, checked_utxo) = generate_check_utxo_code(&contents).unwrap();
-        let check_utxo = checked_utxo[0].clone();
-        assert_eq!(checked_utxo.len(), 2);
+        let parsing_res = match crate::macro_parser::LightFileParser::new().parse(&contents) {
+            Ok(instance) => instance,
+            Err(error) => {
+                println!("Parsing check utxo error.");
+                panic!("{}", describe_error(&contents, error));
+            }
+        };
+
+        let mut checked_utxos = match parsing_res.1 {
+            Some(checked_utxos) => checked_utxos,
+            None => Vec::<CheckUtxo>::new(),
+        };
+        generate_check_utxo_code(&mut checked_utxos).unwrap();
+        let check_utxo = checked_utxos[0].clone();
+        assert_eq!(checked_utxos.len(), 2);
         assert_eq!(check_utxo.name, "utxoName");
         assert_eq!(check_utxo.no_utxos, "1");
         assert_eq!(
@@ -789,7 +813,7 @@ checkInAmountSolUtxoName[i] = ForceEqualIfEnabled();
         );
         // println!("code {}", checked_utxo[1].code);
 
-        let check_utxo1 = checked_utxo[1].clone();
+        let check_utxo1 = checked_utxos[1].clone();
         assert_eq!(check_utxo1.name, "utxoName1");
         assert_eq!(check_utxo1.no_utxos, "1");
         assert_eq!(

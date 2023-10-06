@@ -2,6 +2,24 @@ grammar;
 
 use crate::*;
 
+// pub LightFile: (Option<Vec<Instance>>, Option<Vec<CheckUtxo>>, Option<Vec<String>>) = {
+//     <instances: Instance*> <check_utxos: CheckUtxoType*> <circom_code: CIRCOM_CODE*> => 
+//         (if instances.is_empty() { None } else { Some(instances) }, 
+//          if check_utxos.is_empty() { None } else { Some(check_utxos) },
+//          if circom_code.is_empty() { None } else { Some(circom_code.into_iter().map(ToString::to_string).collect()) })
+// };
+// 
+// pub CircomCode: Vec<String> = {
+//     <token: CIRCOM_CODE*> => token.into_iter().map(ToString::to_string).collect()
+// };
+
+pub LightFile: (Option<Vec<Instance>>, Option<Vec<CheckUtxo>>) = {
+    <instances: Instance*> <check_utxos: CheckUtxoType*> => 
+        (if instances.is_empty() { None } else { Some(instances) }, 
+         if check_utxos.is_empty() { None } else { Some(check_utxos) })
+};
+
+
 // Main rule for parsing the Instance struct
 pub Instance: Instance = {
     "#[instance]" "{" <def:InstanceFields> "}" => def
@@ -75,6 +93,7 @@ match {
     r"\s*" => { }, // whitespace
     r"//[^\n\r]*[\n\r]*" => {}, // single line comments
     r"/\*([^\*]*\*+[^\*/])*([^\*]*\*+|[^\*])*\*/" => {}, // multi-line comments
+    r###"pragma\s+[^;]*;|include\s+"[^"]+";|template\s+\w+\(\)\s*\{\s*[^}]*\}|#\[lightTransaction\s*\(\s*[^\]]+\s*\)\]"### => {}, //CIRCOM_CODE
     r"#\[instance\]" => "#[instance]",
     r"#\[" => "#[",
     r"\[" => "[",
@@ -87,8 +106,8 @@ match {
     r":" => ":",
     r"," => ",",
     r"publicInputs:" => "publicInputs:",
-    r"#\[checkInUtxo\(" => "#[checkInUtxo(",
-    r"#\[checkOutUtxo\(" => "#[checkOutUtxo(",
+    r"#\[checkInUtxo\(?" => "#[checkInUtxo(",
+    r"#\[checkOutUtxo\(?" => "#[checkOutUtxo(",
     r"amountSol " => "amountSol ",
     r"amountSpl " => "amountSpl ",
     r"appDataHash " => "appDataHash ",
@@ -101,18 +120,15 @@ match {
     r">=" => ">=",
     r"<=" => "<=",
     r"config:" => "config:",
-    r"pragma[^;]*;" => {}, // Ignore anything starting with pragma until the next semicolon
-    r"include[^;]*;" => {}, // Ignore anything starting with include until the next semicolon
-    r"template\s+\w+\s*\{[^\}]*\}" => {}, // Ignore pattern like `template name {...}`,
     r"-?[a-zA-Z_0-9]+" => STRING
 }
 
-pub CheckUtxos: Vec<CheckUtxo> = {
-    <utxos: CheckUtxoType*> => utxos
-};
+// pub CheckUtxos: Vec<CheckUtxo> = {
+//     <utxos: CheckUtxoType*> => utxos
+// };
 
 pub CheckUtxoType: CheckUtxo = {
-    "#[checkInUtxo(" <name:STRING> "," <no_utxos:STRING> "," <instruction:STRING> ")]" <fields:CheckUtxoFields> => {
+    "#[checkInUtxo(" <name:STRING> "," <no_utxos:STRING> "," <instruction:STRING> ")]"* <fields:CheckUtxoFields> => {
         CheckUtxo {
             code: "".to_string(), 
             name: name.to_string(),

@@ -2,15 +2,19 @@ use crate::code_gen::circom_main_code::Instance;
 use crate::code_gen::connecting_hash_circom_template;
 use crate::errors::MacroCircomError::{self, LightTransactionUndefined};
 
+use super::check_utxo_code::CheckUtxo;
+
 pub fn generate_psp_circom_code(
     input: &String,
-    instruction_hash_code: &String,
+    checked_utxos: &Vec<CheckUtxo>,
     instance: &mut Instance,
 ) -> Result<(String, String), MacroCircomError> {
     let mut found_bracket = false;
     let mut remaining_lines = Vec::new();
     let mut found_instance = false;
     let mut verifier_name = String::new();
+    println!("nr checked utxos: {}", checked_utxos.len());
+    println!("nr checked utxos: {:?}", checked_utxos);
 
     for line in input.lines() {
         let line = line.trim();
@@ -30,12 +34,15 @@ pub fn generate_psp_circom_code(
         if found_bracket {
             if line.starts_with("template") {
                 instance.template_name = extract_template_name(line);
-                let to_insert = &format!("{} nAppUtxos, levels, nIns, nOuts, feeAsset, indexFeeAsset, indexPublicAsset, nAssets, nInAssets, nOutAssets", if instance.config.is_none() || instance.config.as_ref().unwrap().is_empty() { "" } else { "," });
+                let to_insert = &format!("{} levels, nIns, nOuts, feeAsset, indexFeeAsset, indexPublicAsset, nAssets, nInAssets, nOutAssets", if instance.config.is_none() || instance.config.as_ref().unwrap().is_empty() { "" } else { "," });
                 remaining_lines.push(insert_string_before_parenthesis(line, to_insert));
                 remaining_lines.push(
                     connecting_hash_circom_template::CONNECTING_HASH_VERIFIER_TWO.to_string(),
                 );
-                remaining_lines.push(instruction_hash_code.to_string());
+                checked_utxos.iter().for_each(|utxo| {
+                    println!("utxo code: {}", utxo.code);
+                    remaining_lines.push(utxo.code.clone());
+                });
                 found_bracket = false;
             }
         }
@@ -77,9 +84,9 @@ fn insert_string_before_parenthesis(input: &str, to_insert: &str) -> String {
 mod light_transaction_tests {
     use super::*;
     use crate::code_gen::circom_main_code::Instance;
-    use crate::code_gen::connecting_hash_circom_template::CONNECTING_HASH_VERIFIER_TWO;
     use crate::utils::{create_file, describe_error, open_file};
     use std::process::Command;
+    use std::vec;
 
     #[test]
     fn test_extract_template_name() {
@@ -103,7 +110,6 @@ mod light_transaction_tests {
     #[test]
     fn test_parse_light_transaction_light_transaction_undefined() {
         let input = String::from("no #[lightTransaction] keyword");
-        let instruction_hash_code = String::from("instruction hash code");
         let mut instance = Instance {
             file_name: String::from("file_name"),
             template_name: None,
@@ -111,7 +117,7 @@ mod light_transaction_tests {
             public_inputs: vec![],
         };
 
-        let result = generate_psp_circom_code(&input, &instruction_hash_code, &mut instance);
+        let result = generate_psp_circom_code(&input, &Vec::<CheckUtxo>::new(), &mut instance);
         assert_eq!(result, Err(LightTransactionUndefined));
     }
 
@@ -121,7 +127,6 @@ mod light_transaction_tests {
         let input = String::from(
             "#[lightTransaction(verifierOne)] { ... } \n #[lightTransaction(verifierTwo)] { ... }",
         );
-        let instruction_hash_code = CONNECTING_HASH_VERIFIER_TWO;
         let mut instance = Instance {
             file_name: String::from("file_name"),
             template_name: None,
@@ -129,7 +134,7 @@ mod light_transaction_tests {
             public_inputs: vec![],
         };
 
-        let _ = generate_psp_circom_code(&input, &instruction_hash_code.to_string(), &mut instance);
+        let _ = generate_psp_circom_code(&input, &Vec::<CheckUtxo>::new(), &mut instance);
     }
 
     #[test]
@@ -142,6 +147,9 @@ mod light_transaction_tests {
             config: None,
             public_inputs: vec![],
         };
+
+        let mut checked_utxo = CheckUtxo::new();
+        checked_utxo.code = "signal input x;\n signal input y;\n".to_string();
         let remaining_input =
             match crate::parsers::circom_parser::CircomCodeParser::new().parse(&input) {
                 Ok(instance) => instance,
@@ -149,10 +157,10 @@ mod light_transaction_tests {
                     panic!("{}", describe_error(&input, error));
                 }
             };
-        println!("ignored contents: {}", remaining_input.join("\n"));
+
         let (verifier_name, code) = generate_psp_circom_code(
             &remaining_input.join("\n"),
-            &String::from("signal input x;\nsignal input y;"),
+            &vec![checked_utxo],
             &mut instance,
         )
         .unwrap();
@@ -171,7 +179,7 @@ mod light_transaction_tests {
         */
         pragma circom 2.1.4;
         include \"./test_data.circom\";
-        component main {public [publicZ, transactionHash, publicAppVerifier]} =  test_data( 1, 18, 4, 4, 184598798020101492503359154328231866914977581098629757339001774613643340069, 0, 1, 3, 2, 2);";
+        component main {public [publicZ, transactionHash, publicAppVerifier]} =  TestData( 18, 4, 4, 184598798020101492503359154328231866914977581098629757339001774613643340069, 0, 1, 3, 2, 2);";
         create_file(file_name, &main_file_code).unwrap();
 
         let command_output = Command::new("circom")

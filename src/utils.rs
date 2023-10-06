@@ -87,13 +87,15 @@ pub fn open_file(file_path: &str) -> Result<String, std::io::Error> {
     Ok(contents)
 }
 
-pub fn create_file(file_name: &str, code: &str) -> Result<(), std::io::Error> {
-    let mut output_file = fs::File::create(file_name)?;
+pub fn create_file(path: &str, code: &str) -> Result<(), std::io::Error> {
+    println!("Writing circom to file: {}", path);
+    let mut output_file = fs::File::create(path)?;
     write!(&mut output_file, "{}", code)
 }
 
 pub fn write_rust_code_to_file(path: String, code: String) {
     let code = rustfmt(code).unwrap();
+    println!("Writing rust to file: {}", path);
     let mut output_file_idl = fs::File::create(path).unwrap();
     output_file_idl.write(&code).unwrap();
 }

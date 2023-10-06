@@ -9,19 +9,20 @@ include "comparators.circom";
 #[instance]
 {
     fileName: test_data,
-    config(),
-    nrAppUtoxs: 1,
-    publicInputs: [publicZ]
+    // config:(1), // TODO: make work for zero inputs and make work for no config
+    publicInputs: [publicZ],
 }
 
-#[utxoData]
+#[checkInUtxo(dataUtxo,1,defaultInstruction)]
 {
-    x,
-    y
+    utxoData: {
+        x,
+        y,
+    }
 }
 
 #[lightTransaction(verifierTwo)]
-template test_data() {
+template TestData() {
     // Defines the data which is saved in the utxo
     // utxoData variables need to be lowerCamelCase
 
@@ -29,6 +30,14 @@ template test_data() {
     publicZ === x + y;
 }
 
+template otherTemplate() {
+    // Defines the data which is saved in the utxo
+    // utxoData variables need to be lowerCamelCase
+
+    signal input a;
+    signal input b;
+    a === b;
+}
 /*
 * Environment Constants:
 *   levels = 18

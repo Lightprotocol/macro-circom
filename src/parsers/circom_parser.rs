@@ -4,8 +4,8 @@
 extern crate lalrpop_util as __lalrpop_util;
 #[allow(unused_imports)]
 use self::__lalrpop_util::state_machine as __state_machine;
-extern crate core;
 extern crate alloc;
+extern crate core;
 
 #[rustfmt::skip]
 #[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens, clippy::all)]
@@ -544,139 +544,111 @@ pub(crate) use self::__lalrpop_util::lexer::Token;
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action0<
-    'input,
->(
-    input: &'input str,
-    (_, __0, _): (usize, Vec<String>, usize),
-) -> Vec<String>
-{
+fn __action0<'input>(input: &'input str, (_, __0, _): (usize, Vec<String>, usize)) -> Vec<String> {
     __0
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action1<
-    'input,
->(
+fn __action1<'input>(
     input: &'input str,
     (_, utxos, _): (usize, alloc::vec::Vec<&'input str>, usize),
-) -> Vec<String>
-{
+) -> Vec<String> {
     utxos.into_iter().map(ToString::to_string).collect()
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action2<
-    'input,
->(
+fn __action2<'input>(
     input: &'input str,
     __lookbehind: &usize,
     __lookahead: &usize,
-) -> alloc::vec::Vec<&'input str>
-{
+) -> alloc::vec::Vec<&'input str> {
     alloc::vec![]
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action3<
-    'input,
->(
+fn __action3<'input>(
     input: &'input str,
     (_, v, _): (usize, alloc::vec::Vec<&'input str>, usize),
-) -> alloc::vec::Vec<&'input str>
-{
+) -> alloc::vec::Vec<&'input str> {
     v
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action4<
-    'input,
->(
+fn __action4<'input>(
     input: &'input str,
     (_, __0, _): (usize, &'input str, usize),
-) -> alloc::vec::Vec<&'input str>
-{
+) -> alloc::vec::Vec<&'input str> {
     alloc::vec![__0]
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action5<
-    'input,
->(
+fn __action5<'input>(
     input: &'input str,
     (_, v, _): (usize, alloc::vec::Vec<&'input str>, usize),
     (_, e, _): (usize, &'input str, usize),
-) -> alloc::vec::Vec<&'input str>
-{
-    { let mut v = v; v.push(e); v }
+) -> alloc::vec::Vec<&'input str> {
+    {
+        let mut v = v;
+        v.push(e);
+        v
+    }
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action6<
-    'input,
->(
-    input: &'input str,
-    __lookbehind: &usize,
-    __lookahead: &usize,
-) -> Vec<String>
-{
+fn __action6<'input>(input: &'input str, __lookbehind: &usize, __lookahead: &usize) -> Vec<String> {
     let __start0 = *__lookbehind;
     let __end0 = *__lookahead;
-    let __temp0 = __action2(
-        input,
-        &__start0,
-        &__end0,
-    );
+    let __temp0 = __action2(input, &__start0, &__end0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action1(
-        input,
-        __temp0,
-    )
+    __action1(input, __temp0)
 }
 
 #[allow(unused_variables)]
 #[allow(clippy::too_many_arguments)]
-fn __action7<
-    'input,
->(
+fn __action7<'input>(
     input: &'input str,
     __0: (usize, alloc::vec::Vec<&'input str>, usize),
-) -> Vec<String>
-{
+) -> Vec<String> {
     let __start0 = __0.0;
     let __end0 = __0.2;
-    let __temp0 = __action3(
-        input,
-        __0,
-    );
+    let __temp0 = __action3(input, __0);
     let __temp0 = (__start0, __temp0, __end0);
-    __action1(
-        input,
-        __temp0,
-    )
+    __action1(input, __temp0)
 }
 #[allow(clippy::type_complexity)]
 
-pub trait __ToTriple<'input, >
-{
-    fn to_triple(value: Self) -> Result<(usize,Token<'input>,usize), __lalrpop_util::ParseError<usize, Token<'input>, &'static str>>;
+pub trait __ToTriple<'input> {
+    fn to_triple(
+        value: Self,
+    ) -> Result<
+        (usize, Token<'input>, usize),
+        __lalrpop_util::ParseError<usize, Token<'input>, &'static str>,
+    >;
 }
 
-impl<'input, > __ToTriple<'input, > for (usize, Token<'input>, usize)
-{
-    fn to_triple(value: Self) -> Result<(usize,Token<'input>,usize), __lalrpop_util::ParseError<usize, Token<'input>, &'static str>> {
+impl<'input> __ToTriple<'input> for (usize, Token<'input>, usize) {
+    fn to_triple(
+        value: Self,
+    ) -> Result<
+        (usize, Token<'input>, usize),
+        __lalrpop_util::ParseError<usize, Token<'input>, &'static str>,
+    > {
         Ok(value)
     }
 }
-impl<'input, > __ToTriple<'input, > for Result<(usize, Token<'input>, usize), &'static str>
-{
-    fn to_triple(value: Self) -> Result<(usize,Token<'input>,usize), __lalrpop_util::ParseError<usize, Token<'input>, &'static str>> {
+impl<'input> __ToTriple<'input> for Result<(usize, Token<'input>, usize), &'static str> {
+    fn to_triple(
+        value: Self,
+    ) -> Result<
+        (usize, Token<'input>, usize),
+        __lalrpop_util::ParseError<usize, Token<'input>, &'static str>,
+    > {
         match value {
             Ok(v) => Ok(v),
             Err(error) => Err(__lalrpop_util::ParseError::User { error }),
