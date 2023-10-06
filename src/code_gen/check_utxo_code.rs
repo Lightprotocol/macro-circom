@@ -384,18 +384,24 @@ fn generate_equal_code(
     instruction_name: &String,
     type_prefix: &str,
 ) -> String {
-    format!(
-        "check{variable_name}{name}[i] = ForceEqualIfEnabled();
-        check{variable_name}{name}[i].in[0] <== {assigning_variable_name};
-        check{variable_name}{name}[i].in[1] <== {comparing_variable_name};
-        check{variable_name}{name}[i].enabled <== is{type_prefix}AppUtxo{name}[i] * {instruction_name};
-        ",
-        name = name,
-        comparing_variable_name = comparing_variable_name,
-        instruction_name = instruction_name,
-        variable_name = variable_name.to_upper_camel_case(),
-        type_prefix = String::from(type_prefix).to_upper_camel_case(),
-    )
+    let template = r#"
+check{{variable_name_upper_camel}}{{name}}[i] = ForceEqualIfEnabled();
+check{{variable_name_upper_camel}}{{name}}[i].in[0] <== {{assigning_variable_name}};
+check{{variable_name_upper_camel}}{{name}}[i].in[1] <== {{comparing_variable_name}};
+check{{variable_name_upper_camel}}{{name}}[i].enabled <== is{{type_prefix_upper_camel}}AppUtxo{{name}}[i] * {{instruction_name}};
+"#;
+
+    let handlebars = handlebars::Handlebars::new();
+    let data = serde_json::json!({
+        "name": name,
+        "assigning_variable_name": assigning_variable_name,
+        "variable_name_upper_camel": variable_name.to_upper_camel_case(),
+        "comparing_variable_name": comparing_variable_name,
+        "instruction_name": instruction_name,
+        "type_prefix_upper_camel": String::from(type_prefix).to_upper_camel_case()
+    });
+
+    handlebars.render_template(template, &data).unwrap()
 }
 
 pub fn generate_check_utxo_code(checked_utxo: &mut Vec<CheckUtxo>) -> Result<(), MacroCircomError> {
@@ -406,6 +412,11 @@ pub fn generate_check_utxo_code(checked_utxo: &mut Vec<CheckUtxo>) -> Result<(),
     // generate the components inside the loop
     // close the loop
     for utxo in checked_utxo {
+        if utxo.no_utxos.parse::<u64>().unwrap() == 0 {
+            continue;
+        } else if utxo.no_utxos.parse::<u64>().unwrap() > 1 {
+            unimplemented!("Multiple utxos not supported yet.");
+        }
         utxo.generate_signals();
         utxo.generate_components()?;
         utxo.generate_instruction_hash_code()?;
@@ -424,7 +435,7 @@ pub fn generate_check_utxo_code(checked_utxo: &mut Vec<CheckUtxo>) -> Result<(),
 // - test in voting
 
 mod tests {
-    use crate::describe_error;
+    use crate::{code_gen::circom_code::format_custom_data, describe_error};
 
     #[allow(unused_imports)]
     use super::*;
@@ -629,31 +640,38 @@ for (var inUtxoIndex = 0; inUtxoIndex < nIns; inUtxoIndex++) {
 
         // Constructing the expected code output
         let expected_output = r#"for (var i = 0; i < nIns; i++) {
+
 checkInAmountSolUtxoName[i] = ForceEqualIfEnabled();
-        checkInAmountSolUtxoName[i].in[0] <== inAmountsHasher[i].inputs[0];
-        checkInAmountSolUtxoName[i].in[1] <== sth;
-        checkInAmountSolUtxoName[i].enabled <== isInAppUtxoUtxoName[i] * instruction;
-        checkInAppDataHashUtxoName[i] = ForceEqualIfEnabled();
-        checkInAppDataHashUtxoName[i].in[0] <== inAppDataHash[i].out;
-        checkInAppDataHashUtxoName[i].in[1] <== sth3;
-        checkInAppDataHashUtxoName[i].enabled <== isInAppUtxoUtxoName[i] * instruction;
-        checkInAmountSplUtxoName[i] = ForceEqualIfEnabled();
-        checkInAmountSplUtxoName[i].in[0] <== inAmountsHasher[i].inputs[1];
-        checkInAmountSplUtxoName[i].in[1] <== sth1;
-        checkInAmountSplUtxoName[i].enabled <== isInAppUtxoUtxoName[i] * instruction;
-        checkInAssetSplUtxoName[i] = ForceEqualIfEnabled();
-        checkInAssetSplUtxoName[i].in[0] <== inCommitmentHasher[i].inputs[4];
-        checkInAssetSplUtxoName[i].in[1] <== sth2;
-        checkInAssetSplUtxoName[i].enabled <== isInAppUtxoUtxoName[i] * instruction;
-        checkInUtxoDataAttribute2UtxoName[i] = ForceEqualIfEnabled();
-        checkInUtxoDataAttribute2UtxoName[i].in[0] <== attribute2;
-        checkInUtxoDataAttribute2UtxoName[i].in[1] <== testComparison;
-        checkInUtxoDataAttribute2UtxoName[i].enabled <== isInAppUtxoUtxoName[i] * instruction;
-        }
+checkInAmountSolUtxoName[i].in[0] <== inAmountsHasher[i].inputs[0];
+checkInAmountSolUtxoName[i].in[1] <== sth;
+checkInAmountSolUtxoName[i].enabled <== isInAppUtxoUtxoName[i] * instruction;
+
+checkInAppDataHashUtxoName[i] = ForceEqualIfEnabled();
+checkInAppDataHashUtxoName[i].in[0] <== inAppDataHash[i].out;
+checkInAppDataHashUtxoName[i].in[1] <== sth3;
+checkInAppDataHashUtxoName[i].enabled <== isInAppUtxoUtxoName[i] * instruction;
+
+checkInAmountSplUtxoName[i] = ForceEqualIfEnabled();
+checkInAmountSplUtxoName[i].in[0] <== inAmountsHasher[i].inputs[1];
+checkInAmountSplUtxoName[i].in[1] <== sth1;
+checkInAmountSplUtxoName[i].enabled <== isInAppUtxoUtxoName[i] * instruction;
+
+checkInAssetSplUtxoName[i] = ForceEqualIfEnabled();
+checkInAssetSplUtxoName[i].in[0] <== inCommitmentHasher[i].inputs[4];
+checkInAssetSplUtxoName[i].in[1] <== sth2;
+checkInAssetSplUtxoName[i].enabled <== isInAppUtxoUtxoName[i] * instruction;
+
+checkInUtxoDataAttribute2UtxoName[i] = ForceEqualIfEnabled();
+checkInUtxoDataAttribute2UtxoName[i].in[0] <== attribute2;
+checkInUtxoDataAttribute2UtxoName[i].in[1] <== testComparison;
+checkInUtxoDataAttribute2UtxoName[i].enabled <== isInAppUtxoUtxoName[i] * instruction;
+}
 "#;
-        println!("code {}", check_utxo.code);
         // Asserting that the generated code matches the expected output
-        assert_eq!(check_utxo.code, expected_output);
+        assert_eq!(
+            format_custom_data(&check_utxo.code),
+            format_custom_data(expected_output)
+        );
 
         Ok(())
     }

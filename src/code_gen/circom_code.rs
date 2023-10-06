@@ -80,7 +80,7 @@ fn insert_string_before_parenthesis(input: &str, to_insert: &str) -> String {
     result.push_str(&input[closing_parenthesis_index..]);
     result
 }
-fn format_custom_data(input: &str) -> String {
+pub fn format_custom_data(input: &str) -> String {
     let mut result = String::new();
     let mut indent_level = 0;
 
