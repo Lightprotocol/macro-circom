@@ -13,7 +13,7 @@ include "comparators.circom";
     publicInputs: [publicZ],
 }
 
-#[checkInUtxo(dataUtxo,1,defaultInstruction)]
+#[checkInUtxo(checkedProgramUtxo, 1, defaultInstruction)]
 {
     utxoData: {
         x,

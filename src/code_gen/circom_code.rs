@@ -1,4 +1,4 @@
-use crate::code_gen::circom_main_code::Instance;
+use crate::code_gen::circom_main_code::{Instance, DISCLAIMER_STRING};
 use crate::code_gen::connecting_hash_circom_template;
 use crate::errors::MacroCircomError::{self, LightTransactionUndefined};
 
@@ -51,8 +51,9 @@ pub fn generate_psp_circom_code(
     if !found_instance {
         return Err(LightTransactionUndefined);
     }
-
-    Ok((verifier_name, remaining_lines.join("\n")))
+    remaining_lines.insert(0, DISCLAIMER_STRING.to_string());
+    let remaining_lines = format_custom_data(&remaining_lines.join("\n"));
+    Ok((verifier_name, remaining_lines))
 }
 
 fn extract_verifier(input: &str) -> &str {
@@ -79,7 +80,31 @@ fn insert_string_before_parenthesis(input: &str, to_insert: &str) -> String {
     result.push_str(&input[closing_parenthesis_index..]);
     result
 }
+fn format_custom_data(input: &str) -> String {
+    let mut result = String::new();
+    let mut indent_level = 0;
 
+    for line in input.lines() {
+        let trimmed = line.trim();
+        if trimmed.contains("{") {
+            result.push_str(&"\t".repeat(indent_level));
+            result.push_str(trimmed);
+            result.push('\n');
+            indent_level += 1;
+        } else if trimmed.contains("}") {
+            indent_level -= 1;
+            result.push_str(&"\t".repeat(indent_level));
+            result.push_str(trimmed);
+            result.push('\n');
+        } else {
+            result.push_str(&"\t".repeat(indent_level));
+            result.push_str(trimmed);
+            result.push('\n');
+        }
+    }
+
+    result
+}
 #[cfg(test)]
 mod light_transaction_tests {
     use super::*;
