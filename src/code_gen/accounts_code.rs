@@ -2,7 +2,8 @@ use handlebars::Handlebars;
 use serde_json::json;
 
 extern crate syn;
-use crate::{check_utxo::CheckUtxo, Instance};
+use crate::code_gen::check_utxo_code::CheckUtxo;
+use crate::code_gen::circom_main_code::Instance;
 
 pub const AUTO_GENERATED_ACCOUNTS_TEMPLATE: &str = "
 use anchor_lang::prelude::*;
@@ -58,10 +59,7 @@ pub struct UtxoAppData {
 
 // TODO: reflect utxo name in the template
 // TODO: reflect whether it's in or out utxo in the template
-pub fn gen_code_auto_generated_accounts(
-    instance: &Instance,
-    checked_in_utxos: &Vec<CheckUtxo>,
-) -> String {
+pub fn generate_accounts_code(instance: &Instance, checked_in_utxos: &Vec<CheckUtxo>) -> String {
     let utxo_data_variable_names = checked_in_utxos[0]
         .clone()
         .utxo_data
@@ -98,7 +96,7 @@ mod auto_generated_accounts_tests {
         file.read_to_string(&mut expected_output)
             .expect("Unable to read the file");
 
-        let output = gen_code_auto_generated_accounts(
+        let output = generate_accounts_code(
             &Instance {
                 public_inputs: vec![
                     String::from("publicZ"),

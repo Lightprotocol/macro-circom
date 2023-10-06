@@ -1,4 +1,4 @@
-use crate::Instance;
+use crate::{parsers::macro_parser, utils::describe_error};
 use std::{fs, io::prelude::*};
 
 pub const DISCLAIMER_STRING: &str = "/**
@@ -6,7 +6,28 @@ pub const DISCLAIMER_STRING: &str = "/**
 * DO NOT EDIT MANUALLY.
 * THE FILE WILL BE OVERWRITTEN EVERY TIME THE LIGHT CLI BUILD IS RUN.
 */";
-pub fn generate_circom_main_string(instance: &Instance, circuit_name: &str) -> String {
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct Instance {
+    pub file_name: String,
+    pub template_name: Option<String>,
+    pub config: Option<Vec<String>>,
+    pub public_inputs: Vec<String>,
+}
+
+pub fn parse_instance<'a>(
+    input: &'a str,
+    // ) -> Result<Instance, lalrpop_util::ParseError<usize, lalrpop_util::lexer::Token<'_>, &'a str>> {
+) -> Instance {
+    // instance::InstanceParser::new().parse(input)
+    match macro_parser::InstanceParser::new().parse(input) {
+        Ok(instance) => instance,
+        Err(error) => {
+            panic!("{}", describe_error(&input, error));
+        }
+    }
+}
+pub fn generate_circom_main_code(instance: &Instance, circuit_name: &str) -> String {
     let name = instance.template_name.as_ref().unwrap();
     let config = &instance.config;
     let public_inputs = instance.public_inputs.to_vec();
@@ -38,7 +59,7 @@ pub fn generate_circom_main_file(instance: Instance, file_name: &str, path_to_pa
         .concat(),
     )
     .unwrap();
-    let code = generate_circom_main_string(&instance, file_name);
+    let code = generate_circom_main_code(&instance, file_name);
     println!(
         "sucessfully created main {}.circom and {}.circom",
         instance.file_name, file_name
@@ -68,7 +89,7 @@ mod tests {
             component main {{public [transactionHash, publicAppVerifier]}} =  AppTransaction(7, 1, 18, 4, 4, 184598798020101492503359154328231866914977581098629757339001774613643340069, 0, 1, 3, 2, 2);", DISCLAIMER_STRING);
 
         assert_eq!(
-            generate_circom_main_string(&instance, "circuit"),
+            generate_circom_main_code(&instance, "circuit"),
             expected_string
         );
     }
@@ -95,7 +116,7 @@ mod tests {
             component main {{public [transactionHash, publicAppVerifier]}} =  AppTransaction(7, 1, 3, 2, 18, 4, 4, 184598798020101492503359154328231866914977581098629757339001774613643340069, 0, 1, 3, 2, 2);", DISCLAIMER_STRING);
 
         assert_eq!(
-            generate_circom_main_string(&instance, "circuit"),
+            generate_circom_main_code(&instance, "circuit"),
             expected_string
         );
     }
@@ -118,7 +139,7 @@ mod tests {
             component main {public [transactionHash, publicAppVerifier]} =  AppTransaction(7, 2 ,18, 4, 4, 184598798020101492503359154328231866914977581098629757339001774613643340069, 0, 1, 3, 2, 2);";
 
         assert_eq!(
-            generate_circom_main_string(&instance, "circuit"),
+            generate_circom_main_code(&instance, "circuit"),
             incorrect_expected_string
         );
     }

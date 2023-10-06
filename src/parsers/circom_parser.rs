@@ -1,5 +1,5 @@
 // auto-generated: "lalrpop 0.20.0"
-// sha3: aa8f9d2b63320a3fda795ad99f9a2f6564d4c6b0c97c21ff31a4ccdd72db8619
+// sha3: 746f546b7972a79772dc725172a4eacd3542a193907e28aa83d2b86f3e37c56a
 #[allow(unused_extern_crates)]
 extern crate lalrpop_util as __lalrpop_util;
 #[allow(unused_imports)]
@@ -9,7 +9,7 @@ extern crate alloc;
 
 #[rustfmt::skip]
 #[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens, clippy::all)]
-mod __parse__Imports {
+mod __parse__CircomCode {
 
     #[allow(unused_extern_crates)]
     extern crate lalrpop_util as __lalrpop_util;
@@ -264,15 +264,15 @@ mod __parse__Imports {
             _ => panic!("invalid reduction index {}", __reduce_index)
         }
     }
-    pub struct ImportsParser {
+    pub struct CircomCodeParser {
         builder: __lalrpop_util::lexer::MatcherBuilder,
         _priv: (),
     }
 
-    impl ImportsParser {
-        pub fn new() -> ImportsParser {
+    impl CircomCodeParser {
+        pub fn new() -> CircomCodeParser {
             let __builder = super::__intern_token::new_builder();
-            ImportsParser {
+            CircomCodeParser {
                 builder: __builder,
                 _priv: (),
             }
@@ -360,7 +360,7 @@ mod __parse__Imports {
                 __reduce5(input, __lookahead_start, __symbols, core::marker::PhantomData::<(&())>)
             }
             6 => {
-                // __Imports = Imports => ActionFn(0);
+                // __CircomCode = CircomCode => ActionFn(0);
                 let __sym0 = __pop_Variant1(__symbols);
                 let __start = __sym0.0;
                 let __end = __sym0.2;
@@ -422,7 +422,7 @@ mod __parse__Imports {
         _: core::marker::PhantomData<(&'input ())>,
     ) -> (usize, usize)
     {
-        // Imports =  => ActionFn(6);
+        // CircomCode =  => ActionFn(6);
         let __start = __lookahead_start.cloned().or_else(|| __symbols.last().map(|s| s.2.clone())).unwrap_or_default();
         let __end = __start.clone();
         let __nt = super::__action6::<>(input, &__start, &__end);
@@ -438,7 +438,7 @@ mod __parse__Imports {
         _: core::marker::PhantomData<(&'input ())>,
     ) -> (usize, usize)
     {
-        // Imports = STRING+ => ActionFn(7);
+        // CircomCode = STRING+ => ActionFn(7);
         let __sym0 = __pop_Variant2(__symbols);
         let __start = __sym0.0;
         let __end = __sym0.2;
@@ -516,7 +516,7 @@ mod __parse__Imports {
         (2, 2)
     }
 }
-pub use self::__parse__Imports::ImportsParser;
+pub use self::__parse__CircomCode::CircomCodeParser;
 #[cfg_attr(rustfmt, rustfmt_skip)]
 mod __intern_token {
     #![allow(unused_imports)]

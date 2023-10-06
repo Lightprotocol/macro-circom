@@ -1,9 +1,8 @@
-use crate::connecting_hash_circom;
-use crate::Instance;
-use crate::MacroCircomError;
-use crate::MacroCircomError::LightTransactionUndefined;
+use crate::code_gen::circom_main_code::Instance;
+use crate::code_gen::connecting_hash_circom_template;
+use crate::errors::MacroCircomError::{self, LightTransactionUndefined};
 
-pub fn parse_light_transaction(
+pub fn generate_psp_circom_code(
     input: &String,
     instruction_hash_code: &String,
     instance: &mut Instance,
@@ -33,8 +32,9 @@ pub fn parse_light_transaction(
                 instance.template_name = extract_template_name(line);
                 let to_insert = &format!("{} nAppUtxos, levels, nIns, nOuts, feeAsset, indexFeeAsset, indexPublicAsset, nAssets, nInAssets, nOutAssets", if instance.config.is_none() || instance.config.as_ref().unwrap().is_empty() { "" } else { "," });
                 remaining_lines.push(insert_string_before_parenthesis(line, to_insert));
-                remaining_lines
-                    .push(connecting_hash_circom::CONNECTING_HASH_VERIFIER_TWO.to_string());
+                remaining_lines.push(
+                    connecting_hash_circom_template::CONNECTING_HASH_VERIFIER_TWO.to_string(),
+                );
                 remaining_lines.push(instruction_hash_code.to_string());
                 found_bracket = false;
             }
@@ -75,11 +75,11 @@ fn insert_string_before_parenthesis(input: &str, to_insert: &str) -> String {
 
 #[cfg(test)]
 mod light_transaction_tests {
-    use crate::connecting_hash_circom::CONNECTING_HASH_VERIFIER_TWO;
-    use std::process::Command;
-
     use super::*;
+    use crate::code_gen::circom_main_code::Instance;
+    use crate::code_gen::connecting_hash_circom_template::CONNECTING_HASH_VERIFIER_TWO;
     use crate::utils::{create_file, describe_error, open_file};
+    use std::process::Command;
 
     #[test]
     fn test_extract_template_name() {
@@ -111,7 +111,7 @@ mod light_transaction_tests {
             public_inputs: vec![],
         };
 
-        let result = parse_light_transaction(&input, &instruction_hash_code, &mut instance);
+        let result = generate_psp_circom_code(&input, &instruction_hash_code, &mut instance);
         assert_eq!(result, Err(LightTransactionUndefined));
     }
 
@@ -129,7 +129,7 @@ mod light_transaction_tests {
             public_inputs: vec![],
         };
 
-        let _ = parse_light_transaction(&input, &instruction_hash_code.to_string(), &mut instance);
+        let _ = generate_psp_circom_code(&input, &instruction_hash_code.to_string(), &mut instance);
     }
 
     #[test]
@@ -142,14 +142,15 @@ mod light_transaction_tests {
             config: None,
             public_inputs: vec![],
         };
-        let remaining_input = match crate::ignoredContent::ImportsParser::new().parse(&input) {
-            Ok(instance) => instance,
-            Err(error) => {
-                panic!("{}", describe_error(&input, error));
-            }
-        };
+        let remaining_input =
+            match crate::parsers::circom_parser::CircomCodeParser::new().parse(&input) {
+                Ok(instance) => instance,
+                Err(error) => {
+                    panic!("{}", describe_error(&input, error));
+                }
+            };
         println!("ignored contents: {}", remaining_input.join("\n"));
-        let (verifier_name, code) = parse_light_transaction(
+        let (verifier_name, code) = generate_psp_circom_code(
             &remaining_input.join("\n"),
             &String::from("signal input x;\nsignal input y;"),
             &mut instance,

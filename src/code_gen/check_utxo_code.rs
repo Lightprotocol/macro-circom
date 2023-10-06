@@ -65,6 +65,12 @@ pub struct CheckUtxo {
        checkInUtxo[i].enabled <== isAppInUtxo[i];
    }
 */
+
+// new approach:
+// - do one template for one checked utxo
+// - create this template multiple times
+// -> reduce complexity
+
 impl CheckUtxo {
     pub fn new() -> Self {
         CheckUtxo {
@@ -388,13 +394,13 @@ pub fn generate_check_utxo_code(
 ) -> Result<(String, Vec<CheckUtxo>), MacroCircomError> {
     // let mut checked_utxo = Vec::<CheckUtxo>::new();
     let remaining_contents: String = contents.clone();
-    let mut checked_utxo = match crate::instance::CheckUtxosParser::new().parse(&remaining_contents)
-    {
-        Ok(instance) => instance,
-        Err(error) => {
-            panic!("{}", describe_error(&remaining_contents, error));
-        }
-    };
+    let mut checked_utxo =
+        match crate::macro_parser::CheckUtxosParser::new().parse(&remaining_contents) {
+            Ok(instance) => instance,
+            Err(error) => {
+                panic!("{}", describe_error(&remaining_contents, error));
+            }
+        };
     // got all the info now generate the code
     // generate the input signals
     // generate the components
@@ -745,11 +751,9 @@ checkInAmountSolUtxoName[i] = ForceEqualIfEnabled();
                }
            }",
         );
-        let (remaining_content, checked_utxo) = generate_check_utxo_code(&contents).unwrap();
+        let (_, checked_utxo) = generate_check_utxo_code(&contents).unwrap();
         let check_utxo = checked_utxo[0].clone();
         assert_eq!(checked_utxo.len(), 2);
-        println!("code {}", check_utxo.code);
-        // assert_eq!(remaining_content, "}\n}\n}\n}");
         assert_eq!(check_utxo.name, "utxoName");
         assert_eq!(check_utxo.no_utxos, "1");
         assert_eq!(
@@ -819,17 +823,5 @@ checkInAmountSolUtxoName[i] = ForceEqualIfEnabled();
                 ),
             ])
         );
-        // let ignored_contents = crate::ignoredContent::IgnoredContentParser::new()
-        //     .parse(&remaining_content)
-        //     .unwrap();
-        let ignored_contents =
-            match crate::ignoredContent::ImportsParser::new().parse(&remaining_content) {
-                Ok(instance) => instance,
-                Err(error) => {
-                    panic!("{}", describe_error(&remaining_content, error));
-                }
-            };
-        println!("ignored contents: {}", ignored_contents.join(","));
-        // latest idea to ignore content is to define an inverse grammar that ignores everything the other grammar matches
     }
 }

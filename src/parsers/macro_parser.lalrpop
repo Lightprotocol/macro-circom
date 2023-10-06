@@ -1,6 +1,6 @@
 grammar;
 
-use super::*;
+use crate::*;
 
 // Main rule for parsing the Instance struct
 pub Instance: Instance = {
