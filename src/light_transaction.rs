@@ -1,5 +1,4 @@
 use crate::connecting_hash_circom;
-use crate::connecting_hash_circom::CONNECTING_HASH_VERIFIER_TWO;
 use crate::Instance;
 use crate::MacroCircomError;
 use crate::MacroCircomError::LightTransactionUndefined;
@@ -76,14 +75,11 @@ fn insert_string_before_parenthesis(input: &str, to_insert: &str) -> String {
 
 #[cfg(test)]
 mod light_transaction_tests {
+    use crate::connecting_hash_circom::CONNECTING_HASH_VERIFIER_TWO;
     use std::process::Command;
 
     use super::*;
-    use crate::{
-        code_gen::circom_main::generate_circom_main_string,
-        ignoredContent,
-        utils::{create_file, describe_error, open_file},
-    };
+    use crate::utils::{create_file, describe_error, open_file};
 
     #[test]
     fn test_extract_template_name() {
@@ -146,7 +142,7 @@ mod light_transaction_tests {
             config: None,
             public_inputs: vec![],
         };
-        let mut remaining_input = match crate::ignoredContent::ImportsParser::new().parse(&input) {
+        let remaining_input = match crate::ignoredContent::ImportsParser::new().parse(&input) {
             Ok(instance) => instance,
             Err(error) => {
                 panic!("{}", describe_error(&input, error));

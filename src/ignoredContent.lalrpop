@@ -1,6 +1,5 @@
 grammar;
 
-use super::*;
 pub Imports: Vec<String> = {
     <utxos: STRING*> => utxos.into_iter().map(ToString::to_string).collect()
 };

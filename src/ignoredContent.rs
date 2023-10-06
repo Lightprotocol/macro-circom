@@ -1,6 +1,5 @@
 // auto-generated: "lalrpop 0.20.0"
-// sha3: bd6c86eb203e11c20b637c80fe4514d09d3c593eea0e2e822e79aa1a50083426
-use super::*;
+// sha3: aa8f9d2b63320a3fda795ad99f9a2f6564d4c6b0c97c21ff31a4ccdd72db8619
 #[allow(unused_extern_crates)]
 extern crate lalrpop_util as __lalrpop_util;
 #[allow(unused_imports)]
@@ -12,7 +11,6 @@ extern crate alloc;
 #[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens, clippy::all)]
 mod __parse__Imports {
 
-    use super::super::*;
     #[allow(unused_extern_crates)]
     extern crate lalrpop_util as __lalrpop_util;
     #[allow(unused_imports)]
@@ -522,7 +520,6 @@ pub use self::__parse__Imports::ImportsParser;
 #[cfg_attr(rustfmt, rustfmt_skip)]
 mod __intern_token {
     #![allow(unused_imports)]
-    use super::super::*;
     #[allow(unused_extern_crates)]
     extern crate lalrpop_util as __lalrpop_util;
     #[allow(unused_imports)]

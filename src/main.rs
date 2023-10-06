@@ -1,17 +1,18 @@
-pub mod checkUtxo;
+pub mod check_utxo;
 pub mod code_gen;
 pub mod connecting_hash_circom;
 pub mod errors;
+#[allow(non_snake_case)]
 pub mod ignoredContent;
 pub mod instance;
 pub mod light_transaction;
 pub mod utils;
-pub use checkUtxo::*;
+pub use check_utxo::*;
 use code_gen::auto_generated_accounts::gen_code_auto_generated_accounts;
 use code_gen::circom_main::generate_circom_main_string;
 
 use crate::errors::MacroCircomError;
-use anyhow::{anyhow, Error as AnyhowError};
+use anyhow::Error as AnyhowError;
 use clap::{App, Arg};
 use utils::{create_file, describe_error, open_file, write_rust_code_to_file};
 
@@ -131,13 +132,10 @@ fn main() -> Result<(), AnyhowError> {
 }
 
 fn parse(contents: String) -> Result<(Instance, Vec<CheckUtxo>, String), AnyhowError> {
-    let mut instance = parse_instance(&contents);
+    let instance = parse_instance(&contents);
 
-    let (remainingContents, checkedInUtxos) = generate_check_utxo_code(&contents)?;
-    let (verifier_name, circom_code) =
-        parse_light_transaction(&contents, &checkedInUtxos[0].code, &mut instance)?;
-
-    Ok((instance, checkedInUtxos, remainingContents))
+    let (remaining_contents, checked_utxos) = generate_check_utxo_code(&contents)?;
+    Ok((instance, checked_utxos, remaining_contents))
 }
 
 fn generate_code(

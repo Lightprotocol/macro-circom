@@ -2,7 +2,7 @@ use handlebars::Handlebars;
 use serde_json::json;
 
 extern crate syn;
-use crate::{checkUtxo::CheckUtxo, utils::write_rust_code_to_file, Instance};
+use crate::{check_utxo::CheckUtxo, Instance};
 
 pub const AUTO_GENERATED_ACCOUNTS_TEMPLATE: &str = "
 use anchor_lang::prelude::*;

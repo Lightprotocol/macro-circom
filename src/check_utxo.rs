@@ -386,9 +386,9 @@ fn generate_equal_code(
 pub fn generate_check_utxo_code(
     contents: &String,
 ) -> Result<(String, Vec<CheckUtxo>), MacroCircomError> {
-    // let mut checkedUtxos = Vec::<CheckUtxo>::new();
-    let mut remaining_contents: String = contents.clone();
-    let mut checkedUtxos = match crate::instance::CheckUtxosParser::new().parse(&remaining_contents)
+    // let mut checked_utxo = Vec::<CheckUtxo>::new();
+    let remaining_contents: String = contents.clone();
+    let mut checked_utxo = match crate::instance::CheckUtxosParser::new().parse(&remaining_contents)
     {
         Ok(instance) => instance,
         Err(error) => {
@@ -401,14 +401,14 @@ pub fn generate_check_utxo_code(
     // generate the loop
     // generate the components inside the loop
     // close the loop
-    for utxo in &mut checkedUtxos {
+    for utxo in &mut checked_utxo {
         utxo.generate_signals();
         utxo.generate_components()?;
         utxo.generate_instruction_hash_code()?;
         utxo.generate_comparison_check_code()?;
     }
 
-    Ok((remaining_contents, checkedUtxos))
+    Ok((remaining_contents, checked_utxo))
 }
 
 // TODO:
@@ -420,9 +420,10 @@ pub fn generate_check_utxo_code(
 // - test in voting
 
 mod tests {
-    use crate::utils::assert_syn_eq;
-
+    #[allow(unused_imports)]
     use super::*;
+    #[allow(unused_imports)]
+    use crate::utils::assert_syn_eq;
     /* TODO: rewrite with parser
         #[test]
         fn generate_check_in_utxo_code_test() {
@@ -670,34 +671,33 @@ checkInAmountSolUtxoName[i] = ForceEqualIfEnabled();
                }
            }",
         );
-        let (remainingContent, checkedUtxos) = generate_check_utxo_code(&contents).unwrap();
-        let checkUtxo = checkedUtxos[0].clone();
-        println!("code {}", checkUtxo.code);
-        // assert_eq!(remainingContent, "}\n}");
-        assert_eq!(checkUtxo.name, "utxoName");
-        assert_eq!(checkUtxo.no_utxos, "1");
+        let (_, checked_utxo) = generate_check_utxo_code(&contents).unwrap();
+        let check_utxo = checked_utxo[0].clone();
+        println!("code {}", check_utxo.code);
+        assert_eq!(check_utxo.name, "utxoName");
+        assert_eq!(check_utxo.no_utxos, "1");
         assert_eq!(
-            checkUtxo.instruction_name,
+            check_utxo.instruction_name,
             Some(String::from("instruction"))
         );
         assert_eq!(
-            checkUtxo.amount_sol,
+            check_utxo.amount_sol,
             Some((Comparator::Equal, String::from("sth")))
         );
         assert_eq!(
-            checkUtxo.amount_spl,
+            check_utxo.amount_spl,
             Some((Comparator::Equal, String::from("sth1")))
         );
         assert_eq!(
-            checkUtxo.asset_spl,
+            check_utxo.asset_spl,
             Some((Comparator::Equal, String::from("sth2")))
         );
         assert_eq!(
-            checkUtxo.app_data_hash,
+            check_utxo.app_data_hash,
             Some((Comparator::Equal, String::from("sth3")))
         );
         assert_eq!(
-            checkUtxo.utxo_data,
+            check_utxo.utxo_data,
             Some(vec![
                 ("attribute1".to_string(), None, None),
                 (
@@ -745,35 +745,35 @@ checkInAmountSolUtxoName[i] = ForceEqualIfEnabled();
                }
            }",
         );
-        let (remainingContent, checkedUtxos) = generate_check_utxo_code(&contents).unwrap();
-        let checkUtxo = checkedUtxos[0].clone();
-        assert_eq!(checkedUtxos.len(), 2);
-        println!("code {}", checkUtxo.code);
-        // assert_eq!(remainingContent, "}\n}\n}\n}");
-        assert_eq!(checkUtxo.name, "utxoName");
-        assert_eq!(checkUtxo.no_utxos, "1");
+        let (remaining_content, checked_utxo) = generate_check_utxo_code(&contents).unwrap();
+        let check_utxo = checked_utxo[0].clone();
+        assert_eq!(checked_utxo.len(), 2);
+        println!("code {}", check_utxo.code);
+        // assert_eq!(remaining_content, "}\n}\n}\n}");
+        assert_eq!(check_utxo.name, "utxoName");
+        assert_eq!(check_utxo.no_utxos, "1");
         assert_eq!(
-            checkUtxo.instruction_name,
+            check_utxo.instruction_name,
             Some(String::from("instruction"))
         );
         assert_eq!(
-            checkUtxo.amount_sol,
+            check_utxo.amount_sol,
             Some((Comparator::Equal, String::from("sth")))
         );
         assert_eq!(
-            checkUtxo.amount_spl,
+            check_utxo.amount_spl,
             Some((Comparator::Equal, String::from("sth1")))
         );
         assert_eq!(
-            checkUtxo.asset_spl,
+            check_utxo.asset_spl,
             Some((Comparator::Equal, String::from("sth2")))
         );
         assert_eq!(
-            checkUtxo.app_data_hash,
+            check_utxo.app_data_hash,
             Some((Comparator::Equal, String::from("sth3")))
         );
         assert_eq!(
-            checkUtxo.utxo_data,
+            check_utxo.utxo_data,
             Some(vec![
                 ("attribute1".to_string(), None, None),
                 (
@@ -783,33 +783,33 @@ checkInAmountSolUtxoName[i] = ForceEqualIfEnabled();
                 ),
             ])
         );
-        // println!("code {}", checkedUtxos[1].code);
+        // println!("code {}", checked_utxo[1].code);
 
-        let checkUtxo1 = checkedUtxos[1].clone();
-        assert_eq!(checkUtxo1.name, "utxoName1");
-        assert_eq!(checkUtxo1.no_utxos, "1");
+        let check_utxo1 = checked_utxo[1].clone();
+        assert_eq!(check_utxo1.name, "utxoName1");
+        assert_eq!(check_utxo1.no_utxos, "1");
         assert_eq!(
-            checkUtxo1.instruction_name,
+            check_utxo1.instruction_name,
             Some(String::from("instruction1"))
         );
         assert_eq!(
-            checkUtxo1.amount_sol,
+            check_utxo1.amount_sol,
             Some((Comparator::Equal, String::from("sth2")))
         );
         assert_eq!(
-            checkUtxo1.amount_spl,
+            check_utxo1.amount_spl,
             Some((Comparator::Equal, String::from("sth12")))
         );
         assert_eq!(
-            checkUtxo1.asset_spl,
+            check_utxo1.asset_spl,
             Some((Comparator::Equal, String::from("sth22")))
         );
         assert_eq!(
-            checkUtxo1.app_data_hash,
+            check_utxo1.app_data_hash,
             Some((Comparator::Equal, String::from("sth32")))
         );
         assert_eq!(
-            checkUtxo1.utxo_data,
+            check_utxo1.utxo_data,
             Some(vec![
                 ("attribute11".to_string(), None, None),
                 (
@@ -820,13 +820,13 @@ checkInAmountSolUtxoName[i] = ForceEqualIfEnabled();
             ])
         );
         // let ignored_contents = crate::ignoredContent::IgnoredContentParser::new()
-        //     .parse(&remainingContent)
+        //     .parse(&remaining_content)
         //     .unwrap();
-        let mut ignored_contents =
-            match crate::ignoredContent::ImportsParser::new().parse(&remainingContent) {
+        let ignored_contents =
+            match crate::ignoredContent::ImportsParser::new().parse(&remaining_content) {
                 Ok(instance) => instance,
                 Err(error) => {
-                    panic!("{}", describe_error(&remainingContent, error));
+                    panic!("{}", describe_error(&remaining_content, error));
                 }
             };
         println!("ignored contents: {}", ignored_contents.join(","));
