@@ -113,6 +113,10 @@ match {
     r"appDataHash " => "appDataHash ",
     r"utxoData:" => "utxoData:",
     r"assetSpl " => "assetSpl ",
+    r"verifierAddress " => "verifierAddress ",
+    r"txVersion " => "txVersion ",
+    r"poolType " => "poolType ",
+    r"blinding " => "blinding ",
     r"==" => "==",
     r"!=" => "!=",
     r">" => ">",
@@ -140,7 +144,11 @@ pub CheckUtxoType: CheckUtxo = {
             amount_spl: fields.1,
             asset_spl: fields.2,
             app_data_hash: fields.3,
-            utxo_data: fields.4,
+            verifier_address: fields.4,
+            tx_version: fields.5,
+            pool_type: fields.6,
+            blinding: fields.7,
+            utxo_data: fields.8,
         }
     },
     "#[checkOutUtxo(" <name:STRING> "," <no_utxos:STRING> "," <instruction:STRING> ")]" <fields:CheckUtxoFields> => {
@@ -155,13 +163,17 @@ pub CheckUtxoType: CheckUtxo = {
             amount_spl: fields.1,
             asset_spl: fields.2,
             app_data_hash: fields.3,
-            utxo_data: fields.4,
+            verifier_address: fields.4,
+            tx_version: fields.5,
+            pool_type: fields.6,
+            blinding: fields.7,
+            utxo_data: fields.8,
         }
     }
 };
 
-CheckUtxoFields: (Option<(Comparator, String)>, Option<(Comparator, String)>, Option<(Comparator, String)>, Option<(Comparator, String)>, Option<Vec<(String, Option<Comparator>, Option<String>)>>) = {
-    "{" <amount_sol:AmountSolProperty> <amount_spl:AmountSplProperty> <asset_spl:AssetSplProperty> <app_data_hash:AppDataHashProperty> <utxo_data:UtxoDataProperty> "}" => (amount_sol, amount_spl, asset_spl, app_data_hash, utxo_data)
+CheckUtxoFields: (Option<(Comparator, String)>, Option<(Comparator, String)>, Option<(Comparator, String)>, Option<(Comparator, String)>, Option<(Comparator, String)>, Option<(Comparator, String)>, Option<(Comparator, String)>, Option<(Comparator, String)>, Option<Vec<(String, Option<Comparator>, Option<String>)>>) = {
+    "{" <amount_sol:AmountSolProperty> <amount_spl:AmountSplProperty> <asset_spl:AssetSplProperty> <app_data_hash:AppDataHashProperty> <verifier_address:VerifierAddressProperty> <blinding:BlindingProperty> <tx_version:TxVersionProperty> <pool_type:PoolTypeProperty> <utxo_data:UtxoDataProperty> "}" => (amount_sol, amount_spl, asset_spl, app_data_hash, verifier_address, tx_version, pool_type, blinding, utxo_data)
 };
 
 AmountSolProperty: Option<(Comparator, String)> = {
@@ -181,6 +193,26 @@ AssetSplProperty: Option<(Comparator, String)> = {
 
 AppDataHashProperty: Option<(Comparator, String)> = {
     "appDataHash " <comparator:COMPARATOR> <value:STRING> "," => Some((comparator, value.to_string())),
+    () => None
+};
+
+VerifierAddressProperty: Option<(Comparator, String)> = {
+    "verifierAddress " <comparator:COMPARATOR> <value:STRING> "," => Some((comparator, value.to_string())),
+    () => None
+};
+
+BlindingProperty: Option<(Comparator, String)> = {
+    "blinding " <comparator:COMPARATOR> <value:STRING> "," => Some((comparator, value.to_string())),
+    () => None
+};
+
+TxVersionProperty: Option<(Comparator, String)> = {
+    "txVersion " <comparator:COMPARATOR> <value:STRING> "," => Some((comparator, value.to_string())),
+    () => None
+};
+
+PoolTypeProperty: Option<(Comparator, String)> = {
+    "poolType " <comparator:COMPARATOR> <value:STRING> "," => Some((comparator, value.to_string())),
     () => None
 };
 

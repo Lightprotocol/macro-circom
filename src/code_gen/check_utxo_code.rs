@@ -39,27 +39,13 @@ pub struct CheckUtxo {
     pub amount_spl: Option<(Comparator, String)>,
     pub asset_spl: Option<(Comparator, String)>,
     pub app_data_hash: Option<(Comparator, String)>,
+    pub verifier_address: Option<(Comparator, String)>,
+    pub blinding: Option<(Comparator, String)>,
+    pub tx_version: Option<(Comparator, String)>,
+    pub pool_type: Option<(Comparator, String)>,
     // utxo data needs to be defined completely but does not have to be compared
     pub utxo_data: Option<Vec<(String, Option<Comparator>, Option<String>)>>,
 }
-// get string between curly brackets
-// extract the first word of every line as an attribute
-// expect a comparison arg as the second word
-// expect a variable name as the third word
-// expect a comma at the end of the line
-// generate code as output string:
-// init for loop
-// for every attribute create a ForceEqualIfEnabled component if comparsion is ==
-/**
- * instructionHash code
- *
-* for (var i = 0; i < nIns; i++) {
-       checkInUtxo[i] = ForceEqualIfEnabled();
-       checkInUtxo[i].in[0] <== inAppDataHash[i];
-       checkInUtxo[i].in[1] <== instructionHasher.out;
-       checkInUtxo[i].enabled <== isAppInUtxo[i];
-   }
-*/
 
 // new approach:
 // - do one template for one checked utxo
@@ -80,6 +66,10 @@ impl CheckUtxo {
             asset_spl: None,
             app_data_hash: None,
             utxo_data: None,
+            verifier_address: None,
+            blinding: None,
+            tx_version: None,
+            pool_type: None,
         }
     }
 
@@ -93,14 +83,15 @@ signal input {{this.input}};
 {{/each}}{{/with}}
 
 
-{{#each components}}{{#with this}}
-component check{{this.component}}{{../../utxoName}}[{{is_ins}}];
-{{/with}}{{/each}}
+
 {{#each comparisonsUtxoData}} {{#with this}}
-component check{{this.component}}{{../../utxoName}}[{{is_ins}}];
+component check{{this.component}}{{../../utxoName}}[{{../../is_ins}}];
 {{/with}}{{/each}}
 
 {{#if comparisons}}
+{{#each comparisons}}{{#with this}}
+component check{{this.component}}{{../../utxoName}}[{{../../is_ins}}];
+{{/with}}{{/each}}
 for (var i = 0; i < {{is_ins}}; i++) {
 
     {{#with this}} {{#each comparisons}} 
@@ -173,8 +164,44 @@ for (var inUtxoIndex = 0; inUtxoIndex < nIns; inUtxoIndex++) {
             }));
         }
 
+        if self.pool_type.is_some() {
+            comparisons.push(serde_json::json!({
+                "component": "PoolType",
+                "hasher": "CommitmentHasher",
+                "input": "inputs[6]",
+                "comparison": self.pool_type.as_ref().unwrap().1,
+            }));
+        }
+
+        if self.verifier_address.is_some() {
+            comparisons.push(serde_json::json!({
+                "component": "VerifierAddress",
+                "hasher": "CommitmentHasher",
+                "input": "inputs[7]",
+                "comparison": self.verifier_address.as_ref().unwrap().1,
+            }));
+        }
+
+        if self.blinding.is_some() {
+            comparisons.push(serde_json::json!({
+                "component": "Blinding",
+                "hasher": "CommitmentHasher",
+                "input": "inputs[3]",
+                "comparison": self.blinding.as_ref().unwrap().1,
+            }));
+        }
+
+        if self.tx_version.is_some() {
+            comparisons.push(serde_json::json!({
+                "component": "TxVersion",
+                "hasher": "CommitmentHasher",
+                "input": "inputs[0]",
+                "comparison": self.tx_version.as_ref().unwrap().1,
+            }));
+        }
+
         let mut comparisons_utxo_data = Vec::<handlebars::JsonValue>::new();
-        println!("utxo data: {:?}", self.utxo_data);
+
         for utxo_data in self.utxo_data.as_ref().unwrap() {
             if utxo_data.1.is_some() || utxo_data.2.is_some() {
                 comparisons_utxo_data.push(serde_json::json!({
@@ -230,12 +257,6 @@ for (var inUtxoIndex = 0; inUtxoIndex < nIns; inUtxoIndex++) {
 }
 
 pub fn generate_check_utxo_code(checked_utxo: &mut Vec<CheckUtxo>) -> Result<(), MacroCircomError> {
-    // got all the info now generate the code
-    // generate the input signals
-    // generate the components
-    // generate the loop
-    // generate the components inside the loop
-    // close the loop
     for utxo in checked_utxo {
         if utxo.no_utxos.parse::<u64>().unwrap() == 0 {
             continue;
@@ -247,14 +268,6 @@ pub fn generate_check_utxo_code(checked_utxo: &mut Vec<CheckUtxo>) -> Result<(),
 
     Ok(())
 }
-
-// TODO:
-// - add full test
-// instruction hasher does not add name
-//
-// - test with circom
-// - put into main.rs
-// - test in voting
 
 mod tests {
     #[allow(unused_imports)]
@@ -277,6 +290,10 @@ mod tests {
             amount_spl: Some((Comparator::Equal, "sth1".to_string())),
             asset_spl: Some((Comparator::Equal, "sth2".to_string())),
             app_data_hash: Some((Comparator::Equal, "sth3".to_string())),
+            blinding: Some((Comparator::Equal, "sthB".to_string())),
+            tx_version: Some((Comparator::Equal, "sthT".to_string())),
+            pool_type: Some((Comparator::Equal, "sthP".to_string())),
+            verifier_address: Some((Comparator::Equal, "sthV".to_string())),
             utxo_data: Some(vec![
                 ("attribute1".to_string(), None, None),
                 (
@@ -291,13 +308,19 @@ mod tests {
         let expected_output = r#"
 signal input isInAppUtxoUtxoName[nIns];
 
-
 signal input attribute1;
 
 signal input attribute2;
-    
-component checkUtxoDataAttribute2UtxoName[];
 
+component checkUtxoDataAttribute2UtxoName[nIns];
+component checkAmountSolUtxoName[nIns];
+component checkAppDataHashUtxoName[nIns];
+component checkAmountSplUtxoName[nIns];
+component checkAssetSplUtxoName[nIns];
+component checkPoolTypeUtxoName[nIns];
+component checkVerifierAddressUtxoName[nIns];
+component checkBlindingUtxoName[nIns];
+component checkTxVersionUtxoName[nIns];
 
 for (var i = 0; i < nIns; i++) {
 
@@ -320,6 +343,26 @@ for (var i = 0; i < nIns; i++) {
     checkAssetSplUtxoName[i].in[0] <== inCommitmentHasher[i].inputs[4];
     checkAssetSplUtxoName[i].in[1] <== sth2;
     checkAssetSplUtxoName[i].enabled <== UtxoName[i] * instruction;
+
+    checkPoolTypeUtxoName[i] = ForceEqualIfEnabled();
+    checkPoolTypeUtxoName[i].in[0] <== inCommitmentHasher[i].inputs[6];
+    checkPoolTypeUtxoName[i].in[1] <== sthP;
+    checkPoolTypeUtxoName[i].enabled <== UtxoName[i] * instruction;
+
+    checkVerifierAddressUtxoName[i] = ForceEqualIfEnabled();
+    checkVerifierAddressUtxoName[i].in[0] <== inCommitmentHasher[i].inputs[7];
+    checkVerifierAddressUtxoName[i].in[1] <== sthV;
+    checkVerifierAddressUtxoName[i].enabled <== UtxoName[i] * instruction;
+
+    checkBlindingUtxoName[i] = ForceEqualIfEnabled();
+    checkBlindingUtxoName[i].in[0] <== inCommitmentHasher[i].inputs[3];
+    checkBlindingUtxoName[i].in[1] <== sthB;
+    checkBlindingUtxoName[i].enabled <== UtxoName[i] * instruction;
+
+    checkTxVersionUtxoName[i] = ForceEqualIfEnabled();
+    checkTxVersionUtxoName[i].in[0] <== inCommitmentHasher[i].inputs[0];
+    checkTxVersionUtxoName[i].in[1] <== sthT;
+    checkTxVersionUtxoName[i].enabled <== UtxoName[i] * instruction;
 
     checkUtxoDataAttribute2UtxoName[i] = ForceEqualIfEnabled();
     checkUtxoDataAttribute2UtxoName[i].in[0] <== attribute2;

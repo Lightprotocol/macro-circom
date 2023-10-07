@@ -122,6 +122,10 @@ mod auto_generated_accounts_tests {
                 amount_spl: None,
                 asset_spl: None,
                 app_data_hash: None,
+                pool_type: None,
+                verifier_address: None,
+                tx_version: None,
+                blinding: None,
             }],
         );
         assert_syn_eq(output.as_str(), expected_output.as_str());
