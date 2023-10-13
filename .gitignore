@@ -3,3 +3,5 @@
 /build
 buildLocal*
 .vscode
+parser/lang.rs
+macro-circom/src/parsers/circom_parser.rs
