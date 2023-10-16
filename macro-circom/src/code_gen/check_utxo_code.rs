@@ -273,6 +273,7 @@ mod tests {
     use crate::describe_error;
     #[allow(unused_imports)]
     use crate::utils::assert_syn_eq;
+    #[allow(unused_imports)]
     use parser::Comparator;
     #[test]
     fn generate_comparison_check_code_test() -> Result<(), MacroCircomError> {
@@ -393,7 +394,8 @@ for (var inUtxoIndex = 0; inUtxoIndex < nIns; inUtxoIndex++) {
         Ok(())
     }
 
-    fn remove_formatting(input: &str) -> String {
+    #[allow(dead_code)]
+    pub fn remove_formatting(input: &str) -> String {
         let res: Vec<String> = input
             .split_whitespace()
             .map(|token| {

@@ -1,6 +1,5 @@
 [workspace]
 members = [
     "macro-circom",
-    "parser",
-    "program_structure"
+    "parser"
 ]

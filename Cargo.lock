@@ -643,6 +643,7 @@ dependencies = [
 [[package]]
 name = "program_structure"
 version = "2.1.4"
+source = "git+https://github.com/iden3/circom?rev=ca3345681549c859af1f3f42128e53e3e43fe5e2#ca3345681549c859af1f3f42128e53e3e43fe5e2"
 dependencies = [
  "codespan",
  "codespan-reporting",
