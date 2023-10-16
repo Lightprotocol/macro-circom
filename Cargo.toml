@@ -1,12 +1,5 @@
-[package]
-name = "macro-circom"
-version = "0.1.4"
-edition = "2021"
-description = "Circom DSL providing macros used in Light Protocol"
-license = "Apache-2.0"
-
-[dependencies]
-anyhow = "1.0.71"
-heck = "0.4.1"
-regex = "1.7.3"
-thiserror = "1.0.40"
+[workspace]
+members = [
+    "macro-circom",
+    "parser"
+]
